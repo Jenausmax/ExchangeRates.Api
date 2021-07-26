@@ -1,4 +1,6 @@
-﻿using ExchangeRates.Core.Domain.Interfaces;
+﻿using ExchangeRates.Configuration;
+using ExchangeRates.Core.Domain.Interfaces;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +14,10 @@ namespace ExchangeRates.Core.App.Services
     {
         public HttpClient Client { get; set; }
 
-        public ApiClientService()
+        public ApiClientService(IOptions<ClientConfig> config)
         {
-            Client = new HttpClient();  
+            Client = new HttpClient();
+            Client.BaseAddress = new Uri(config.Value.SiteApi);
         }
     }
 }
