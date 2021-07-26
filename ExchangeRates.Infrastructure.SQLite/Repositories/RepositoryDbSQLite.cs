@@ -1,29 +1,44 @@
 ﻿using ExchangeRates.Core.Domain.Interfaces;
-using System;
+using ExchangeRates.Infrastructure.DB;
+using ExchangeRates.Infrastructure.DB.Models;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExchangeRates.Infrastructure.SQLite.Repositories
 {
-    public class RepositoryDbSQLite<T> : IRepositoryBase<T> where T : class
+    public class RepositoryDbSQLite<T> : IRepositoryBase<T> where T : ValuteModelDb, new()
     {
-        public List<T> GetCollection { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        private readonly DataDb _db;
+        private readonly ILogger _logger;
 
-        public Task<bool> Create(T item)
+        protected DbSet<T> Set { get; }
+
+        public RepositoryDbSQLite(DataDb db, ILogger logger)
         {
-            throw new NotImplementedException();
+            _db = db;
+            _logger = logger;
+            Set = _db.Set<T>();
         }
 
-        public Task<IEnumerable<T>> GetCollectionAll()
+        public async Task<bool> Create(T item, CancellationToken cancel)
         {
-            throw new NotImplementedException();
+            await Set.AddAsync(item, cancel);
+            await _db.SaveChangesAsync(cancel);
+            _logger.Information("Item created.");
+            return true;
         }
 
-        public Task<T> GetItem(T item)
+        public async Task<IEnumerable<T>> GetCollection(CancellationToken cancel)
         {
-            throw new NotImplementedException();
+            return await Set.ToArrayAsync(cancel);
+        }
+
+        public async Task<T> GetItem(T item, CancellationToken cancel)
+        {
+            return await Set.FirstOrDefaultAsync(i => i.Id == item.Id, cancel);
         }
     }
 }

@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExchangeRates.Core.Domain.Interfaces
 {
     public interface IRepositoryBase<T> where T : class
     {
-        List<T> GetCollection { get; set; }
-        Task<IEnumerable<T>> GetCollectionAll();
-        Task<T> GetItem(T item);
-        Task<bool> Create(T item);
+        Task<IEnumerable<T>> GetCollection(CancellationToken cancel);
+        Task<T> GetItem(T item, CancellationToken cancel);
+        Task<bool> Create(T item, CancellationToken cancel);
         
     }
 }
