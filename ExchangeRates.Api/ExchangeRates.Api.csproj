@@ -4,4 +4,9 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ExchangeRates.Configuration\ExchangeRates.Configuration.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Core.App\ExchangeRates.Core.App.csproj" />
+  </ItemGroup>
+
 </Project>
