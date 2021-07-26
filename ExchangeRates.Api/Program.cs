@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
@@ -20,7 +21,7 @@ namespace ExchangeRates.Api
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.SQLite(@"log.db")
-                .CreateLogger();
+                .CreateBootstrapLogger();
 
             try
             {
@@ -41,7 +42,12 @@ namespace ExchangeRates.Api
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .UseSerilog()
+                .UseSerilog((context, services, configuration) => configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .ReadFrom.Services(services)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.SQLite(@"log.db"))
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

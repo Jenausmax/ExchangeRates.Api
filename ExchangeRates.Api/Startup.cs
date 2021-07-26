@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 namespace ExchangeRates.Api
 {
@@ -25,6 +26,7 @@ namespace ExchangeRates.Api
 
             services.AddSingleton<IApiClient, ApiClientService>();
             services.AddScoped<IProcessingService, ProcessingService>();
+            
 
             services.Configure<ClientConfig>(Configuration.GetSection("ClientConfig"));
 
@@ -37,7 +39,7 @@ namespace ExchangeRates.Api
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            app.UseSerilogRequestLogging();
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>

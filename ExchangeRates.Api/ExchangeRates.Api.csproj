@@ -17,4 +17,10 @@
     <ProjectReference Include="..\ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="log.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
