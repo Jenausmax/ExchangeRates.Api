@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Repositories\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj" />
   </ItemGroup>
 
