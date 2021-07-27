@@ -25,6 +25,7 @@ namespace ExchangeRates.Maintenance.Abstraction
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            TimeSpan per = TimeSpan.FromHours(_period.Value.PeriodHours);
             while (!stoppingToken.IsCancellationRequested)
             {
                 var scope = _services.CreateScope();
@@ -40,7 +41,7 @@ namespace ExchangeRates.Maintenance.Abstraction
                 {
                     scope.Dispose();
                 }
-                await Task.Delay(_period.Value.PeriodHours, stoppingToken);
+                await Task.Delay(per, stoppingToken);
             }
         }
 
