@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using ExchangeRates.Configuration;
+﻿using ExchangeRates.Configuration;
 using ExchangeRates.Core.Domain.Interfaces;
 using ExchangeRates.Core.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace ExchangeRates.Core.App.Services
 {

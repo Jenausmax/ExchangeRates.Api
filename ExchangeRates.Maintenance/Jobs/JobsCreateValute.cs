@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using ExchangeRates.Configuration;
+﻿using ExchangeRates.Configuration;
 using ExchangeRates.Core.Domain.Interfaces;
 using ExchangeRates.Maintenance.Abstraction;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ExchangeRates.Maintenance.Jobs
 {

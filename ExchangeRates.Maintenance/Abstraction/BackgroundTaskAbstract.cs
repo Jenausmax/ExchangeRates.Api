@@ -1,12 +1,11 @@
-﻿using System;
-using System.ComponentModel.Design;
-using System.Threading;
-using System.Threading.Tasks;
-using ExchangeRates.Configuration;
+﻿using ExchangeRates.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ExchangeRates.Maintenance.Abstraction
 {
