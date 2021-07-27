@@ -28,7 +28,7 @@ namespace ExchangeRates.Api
                        .UseSqlite(sqliteOptionsAction: b => b.MigrationsAssembly("ExchangeRates.Migrations")));
 
 
-            services.AddSingleton<IApiClient, ApiClientService>();
+            services.AddScoped<IApiClient, ApiClientService>();
             services.AddScoped<IProcessingService, ProcessingService>();
             services.AddScoped<ISaveService, SaveService>();
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryDbSQLite<>));

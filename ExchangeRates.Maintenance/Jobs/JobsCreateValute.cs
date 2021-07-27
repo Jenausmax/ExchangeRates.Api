@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ExchangeRates.Configuration;
 using ExchangeRates.Core.Domain.Interfaces;
 using ExchangeRates.Maintenance.Abstraction;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -15,25 +16,23 @@ namespace ExchangeRates.Maintenance.Jobs
     public class JobsCreateValute : BackgroundTaskAbstract<JobsCreateValute>
     {
         private readonly ILogger _logger;
-        private readonly ISaveService _saveService;
-        private readonly IProcessingService _processing;
 
-        public JobsCreateValute(IServiceProvider services, TimeSpan period, ILogger logger, IOptions<ClientConfig> config, ISaveService saveService, IProcessingService processing) 
-            : base(services, TimeSpan.FromHours(config.Value.PeriodHours), logger)
+        public JobsCreateValute(IServiceProvider services, IOptions<ClientConfig> config, ILogger logger) 
+            : base(services, config, logger)
         {
             _logger = logger;
-            _saveService = saveService;
-            _processing = processing;
         }
 
         protected override async Task DoWorkAsync(CancellationToken stoppingToken, IServiceProvider scope)
         {
+            var saveService = scope.GetRequiredService<ISaveService>();
+            var processingService = scope.GetRequiredService<IProcessingService>();
             
             try
             {
                 _logger.Information("Задача начата.", typeof(JobsCreateValute));
-                var processing = await _processing.RequestProcessing();
-                var res = await _saveService.SaveSet(processing, stoppingToken);
+                var processing = await processingService.RequestProcessing();
+                var res = await saveService.SaveSet(processing, stoppingToken);
                 _logger.Information("Задача выполнена успешно.", typeof(JobsCreateValute));
             }
             catch (Exception e)

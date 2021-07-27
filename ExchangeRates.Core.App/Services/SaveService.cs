@@ -15,13 +15,11 @@ namespace ExchangeRates.Core.App.Services
     public class SaveService : ISaveService
     {
         private readonly ILogger _logger;
-        private readonly IProcessingService _processing;
         private readonly IRepositoryBase<ValuteModelDb> _repository;
 
-        public SaveService(ILogger logger, IProcessingService processing, IRepositoryBase<ValuteModelDb> repository)
+        public SaveService(ILogger logger, IRepositoryBase<ValuteModelDb> repository)
         {
             _logger = logger;
-            _processing = processing;
             _repository = repository;
         }
         public async Task<bool> SaveSet(Root item, CancellationToken cancel)

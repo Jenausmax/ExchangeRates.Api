@@ -14,5 +14,13 @@ namespace ExchangeRates.Infrastructure.DB
 
         private DbSet<ValuteModelDb> Valutes { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<ValuteModelDb>()
+                .HasIndex(x => x.Time);
+        }
+
     }
 }

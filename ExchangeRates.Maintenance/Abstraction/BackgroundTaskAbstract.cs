@@ -14,10 +14,10 @@ namespace ExchangeRates.Maintenance.Abstraction
         where T : BackgroundTaskAbstract<T>
     {
         private readonly IServiceProvider _services;
-        private readonly TimeSpan _period;
+        private readonly IOptions<ClientConfig> _period;
         private readonly ILogger _logger;
 
-        public BackgroundTaskAbstract(IServiceProvider services, TimeSpan period, ILogger logger)
+        public BackgroundTaskAbstract(IServiceProvider services, IOptions<ClientConfig> period, ILogger logger)
         {
             _period = period;
             _logger = logger;
@@ -40,7 +40,7 @@ namespace ExchangeRates.Maintenance.Abstraction
                 {
                     scope.Dispose();
                 }
-                await Task.Delay(_period, stoppingToken);
+                await Task.Delay(_period.Value.PeriodHours, stoppingToken);
             }
         }
 

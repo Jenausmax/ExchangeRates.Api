@@ -3,14 +3,16 @@ using System;
 using ExchangeRates.Infrastructure.DB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ExchangeRates.Migrations.Migrations
 {
     [DbContext(typeof(DataDb))]
-    partial class DataDbModelSnapshot : ModelSnapshot
+    [Migration("20210727134923_AddIDIncrement")]
+    partial class AddIDIncrement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -18,9 +20,8 @@ namespace ExchangeRates.Migrations.Migrations
 
             modelBuilder.Entity("ExchangeRates.Infrastructure.DB.Models.ValuteModelDb", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CharCode")
                         .HasColumnType("TEXT");
