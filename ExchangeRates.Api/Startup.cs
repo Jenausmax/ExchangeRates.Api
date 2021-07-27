@@ -23,7 +23,9 @@ namespace ExchangeRates.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<DataDb>(options =>
-                options.UseSqlite(Configuration.GetConnectionString("DbData")));
+                options.UseSqlite(Configuration.GetConnectionString("DbData"))
+                       .UseSqlite(sqliteOptionsAction: b => b.MigrationsAssembly("ExchangeRates.Migrations")));
+
 
             services.AddSingleton<IApiClient, ApiClientService>();
             services.AddScoped<IProcessingService, ProcessingService>();
