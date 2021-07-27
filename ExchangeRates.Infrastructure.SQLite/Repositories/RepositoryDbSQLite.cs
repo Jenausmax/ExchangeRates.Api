@@ -31,6 +31,16 @@ namespace ExchangeRates.Infrastructure.SQLite.Repositories
             return true;
         }
 
+        public async Task<bool> AddCollection(List<T> items, CancellationToken cancel)
+        {
+            foreach (var item in items)
+            {
+                await Create(item, cancel);
+            }
+            _logger.Information("Items added.");
+            return true;
+        }
+
         public async Task<IEnumerable<T>> GetCollection(CancellationToken cancel)
         {
             return await Set.ToArrayAsync(cancel);

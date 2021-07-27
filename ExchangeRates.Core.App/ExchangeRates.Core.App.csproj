@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ExchangeRates.Configuration\ExchangeRates.Configuration.csproj" />
     <ProjectReference Include="..\ExchangeRates.Core.Domain\ExchangeRates.Core.Domain.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj" />
   </ItemGroup>
 
 </Project>

@@ -12,6 +12,6 @@ namespace ExchangeRates.Core.Domain.Interfaces
         Task<IEnumerable<T>> GetCollection(CancellationToken cancel);
         Task<T> GetItem(T item, CancellationToken cancel);
         Task<bool> Create(T item, CancellationToken cancel);
-        
+        Task<bool> AddCollection(List<T> listValute, CancellationToken cancel);
     }
 }
