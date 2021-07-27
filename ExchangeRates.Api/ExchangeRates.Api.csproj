@@ -20,6 +20,7 @@
     <ProjectReference Include="..\ExchangeRates.Core.App\ExchangeRates.Core.App.csproj" />
     <ProjectReference Include="..\ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj" />
     <ProjectReference Include="..\ExchangeRates.Infrastructure.SQLite\ExchangeRates.Infrastructure.SQLite.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Maintenance\ExchangeRates.Maintenance.csproj" />
     <ProjectReference Include="..\ExchangeRates.Migrations\ExchangeRates.Migrations.csproj" />
   </ItemGroup>
 

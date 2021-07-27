@@ -3,6 +3,7 @@ using ExchangeRates.Core.App.Services;
 using ExchangeRates.Core.Domain.Interfaces;
 using ExchangeRates.Infrastructure.DB;
 using ExchangeRates.Infrastructure.SQLite.Repositories;
+using ExchangeRates.Maintenance.Jobs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -29,10 +30,12 @@ namespace ExchangeRates.Api
 
             services.AddSingleton<IApiClient, ApiClientService>();
             services.AddScoped<IProcessingService, ProcessingService>();
+            services.AddScoped<ISaveService, SaveService>();
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryDbSQLite<>));
             
-
             services.Configure<ClientConfig>(Configuration.GetSection("ClientConfig"));
+
+            services.AddHostedService<JobsCreateValute>();
 
             services.AddControllers();
         }
