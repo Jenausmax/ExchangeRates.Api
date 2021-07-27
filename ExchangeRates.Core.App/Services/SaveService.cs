@@ -27,8 +27,13 @@ namespace ExchangeRates.Core.App.Services
             if (item != null)
             {
                 var date = item.Date;
+                var stampDate = item.Timestamp;
+                var dateSave = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                DateTime d = default;
+                DateTime.TryParse(dateSave, out d);
                 var valutes = item.Valute;
                 var listValute = new List<ValuteModelDb>();
+
                 var amd = new ValuteModelDb()
                 {
                     NumCode = valutes.AMD.NumCode,
@@ -37,7 +42,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.AMD.Name,
                     Value = valutes.AMD.Value,
                     Previous = valutes.AMD.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.AMD.Id
                 };
                 listValute.Add(amd);
 
@@ -49,7 +57,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.AUD.Name,
                     Value = valutes.AUD.Value,
                     Previous = valutes.AUD.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.AUD.Id
                 };
                 listValute.Add(aud);
 
@@ -61,7 +72,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.AZN.Name,
                     Value = valutes.AZN.Value,
                     Previous = valutes.AZN.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.AZN.Id
                 };
                 listValute.Add(azn);
 
@@ -73,7 +87,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.BGN.Name,
                     Value = valutes.BGN.Value,
                     Previous = valutes.BGN.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.BGN.Id
                 };
                 listValute.Add(bgn);
 
@@ -85,7 +102,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.BRL.Name,
                     Value = valutes.BRL.Value,
                     Previous = valutes.BRL.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.BRL.Id
                 };
                 listValute.Add(brl);
 
@@ -97,7 +117,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.BYN.Name,
                     Value = valutes.BYN.Value,
                     Previous = valutes.BYN.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.BYN.Id
                 };
                 listValute.Add(byn);
 
@@ -109,7 +132,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.CAD.Name,
                     Value = valutes.CAD.Value,
                     Previous = valutes.CAD.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.CAD.Id
                 };
                 listValute.Add(cad);
 
@@ -121,7 +147,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.CHF.Name,
                     Value = valutes.CHF.Value,
                     Previous = valutes.CHF.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.CHF.Id
                 };
                 listValute.Add(chf);
 
@@ -133,7 +162,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.CNY.Name,
                     Value = valutes.CNY.Value,
                     Previous = valutes.CNY.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.CNY.Id
                 };
                 listValute.Add(cny);
 
@@ -145,7 +177,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.CZK.Name,
                     Value = valutes.CZK.Value,
                     Previous = valutes.CZK.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.CZK.Id
                 };
                 listValute.Add(czk);
 
@@ -157,7 +192,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.DKK.Name,
                     Value = valutes.DKK.Value,
                     Previous = valutes.DKK.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.DKK.Id
                 };
                 listValute.Add(dkk);
 
@@ -169,7 +207,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.EUR.Name,
                     Value = valutes.EUR.Value,
                     Previous = valutes.EUR.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.EUR.Id
                 };
                 listValute.Add(eur);
 
@@ -181,7 +222,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.GBP.Name,
                     Value = valutes.GBP.Value,
                     Previous = valutes.GBP.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.GBP.Id
                 };
                 listValute.Add(gbp);
 
@@ -193,7 +237,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.HKD.Name,
                     Value = valutes.HKD.Value,
                     Previous = valutes.HKD.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.HKD.Id
                 };
                 listValute.Add(hkd);
 
@@ -205,7 +252,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.HUF.Name,
                     Value = valutes.HUF.Value,
                     Previous = valutes.HUF.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.HUF.Id
                 };
                 listValute.Add(huf);
 
@@ -217,7 +267,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.INR.Name,
                     Value = valutes.INR.Value,
                     Previous = valutes.INR.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.INR.Id
                 };
                 listValute.Add(inr);
 
@@ -229,7 +282,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.JPY.Name,
                     Value = valutes.JPY.Value,
                     Previous = valutes.JPY.Previous,
-                    Time = date
+                   DateValute = date,
+                   TimeStampUpdateValute = stampDate,
+                   DateSave = d,
+                   ValuteId = valutes.JPY.Id
                 };
                 listValute.Add(jpy);
 
@@ -241,7 +297,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.KGS.Name,
                     Value = valutes.KGS.Value,
                     Previous = valutes.KGS.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.KGS.Id
                 };
                 listValute.Add(kgs);
 
@@ -253,7 +312,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.KRW.Name,
                     Value = valutes.KRW.Value,
                     Previous = valutes.KRW.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.KRW.Id
                 };
                 listValute.Add(krw);
 
@@ -265,7 +327,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.KZT.Name,
                     Value = valutes.KZT.Value,
                     Previous = valutes.KZT.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.KZT.Id
                 };
                 listValute.Add(kzt);
 
@@ -277,7 +342,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.MDL.Name,
                     Value = valutes.MDL.Value,
                     Previous = valutes.MDL.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.MDL.Id
                 };
                 listValute.Add(mdl);
 
@@ -289,7 +357,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.NOK.Name,
                     Value = valutes.NOK.Value,
                     Previous = valutes.NOK.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.NOK.Id
                 };
                 listValute.Add(nok);
 
@@ -301,7 +372,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.PLN.Name,
                     Value = valutes.PLN.Value,
                     Previous = valutes.PLN.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.PLN.Id
                 };
                 listValute.Add(pln);
 
@@ -313,7 +387,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.RON.Name,
                     Value = valutes.RON.Value,
                     Previous = valutes.RON.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.RON.Id
                 };
                 listValute.Add(ron);
 
@@ -325,7 +402,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.SEK.Name,
                     Value = valutes.SEK.Value,
                     Previous = valutes.SEK.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.SEK.Id
                 };
                 listValute.Add(sek);
 
@@ -337,7 +417,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.SGD.Name,
                     Value = valutes.SGD.Value,
                     Previous = valutes.SGD.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.SGD.Id
                 };
                 listValute.Add(sgd);
 
@@ -349,7 +432,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.TJS.Name,
                     Value = valutes.TJS.Value,
                     Previous = valutes.TJS.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.TJS.Id
                 };
                 listValute.Add(tjs);
 
@@ -361,7 +447,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.TMT.Name,
                     Value = valutes.TMT.Value,
                     Previous = valutes.TMT.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.TMT.Id
                 };
                 listValute.Add(tmt);
 
@@ -373,7 +462,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.TRY.Name,
                     Value = valutes.TRY.Value,
                     Previous = valutes.TRY.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.TRY.Id
                 };
                 listValute.Add(tryv);
 
@@ -385,7 +477,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.UAH.Name,
                     Value = valutes.UAH.Value,
                     Previous = valutes.UAH.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.UAH.Id
                 };
                 listValute.Add(uah);
 
@@ -397,7 +492,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.USD.Name,
                     Value = valutes.USD.Value,
                     Previous = valutes.USD.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.USD.Id
                 };
                 listValute.Add(usd);
 
@@ -409,7 +507,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.UZS.Name,
                     Value = valutes.UZS.Value,
                     Previous = valutes.UZS.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.UZS.Id
                 };
                 listValute.Add(uzs);
 
@@ -421,11 +522,14 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.XDR.Name,
                     Value = valutes.XDR.Value,
                     Previous = valutes.XDR.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.XDR.Id
                 };
                 listValute.Add(xdr);
 
-                var zar= new ValuteModelDb()
+                var zar = new ValuteModelDb()
                 {
                     NumCode = valutes.ZAR.NumCode,
                     CharCode = valutes.ZAR.CharCode,
@@ -433,7 +537,10 @@ namespace ExchangeRates.Core.App.Services
                     Name = valutes.ZAR.Name,
                     Value = valutes.ZAR.Value,
                     Previous = valutes.ZAR.Previous,
-                    Time = date
+                    DateValute = date,
+                    TimeStampUpdateValute = stampDate,
+                    DateSave = d,
+                    ValuteId = valutes.ZAR.Id
                 };
                 listValute.Add(zar);
 

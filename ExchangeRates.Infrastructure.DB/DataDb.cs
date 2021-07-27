@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ExchangeRates.Infrastructure.DB.Models;
+﻿using ExchangeRates.Infrastructure.DB.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExchangeRates.Infrastructure.DB
@@ -19,7 +14,13 @@ namespace ExchangeRates.Infrastructure.DB
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<ValuteModelDb>()
-                .HasIndex(x => x.Time);
+                .HasIndex(x => x.DateSave);
+
+            modelBuilder.Entity<ValuteModelDb>()
+                .HasIndex(x => x.ValuteId);
+
+            modelBuilder.Entity<ValuteModelDb>()
+                .HasIndex(x => x.CharCode);
         }
 
     }
