@@ -4,6 +4,7 @@ using ExchangeRates.Infrastructure.DB.Models;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,6 +45,11 @@ namespace ExchangeRates.Infrastructure.SQLite.Repositories
         public async Task<IEnumerable<T>> GetCollection(CancellationToken cancel)
         {
             return await Set.ToArrayAsync(cancel);
+        }
+
+        public async Task<IEnumerable<T>> GetCollection(string charCode, CancellationToken cancel)
+        {
+            return await Set.Where(i => i.CharCode == charCode).ToListAsync(cancel);
         }
 
         public async Task<T> GetItem(T item, CancellationToken cancel)

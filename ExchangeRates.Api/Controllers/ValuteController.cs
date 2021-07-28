@@ -3,21 +3,33 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using ExchangeRates.Core.Domain.Interfaces;
+using ExchangeRates.Core.Domain.Models;
+using Serilog;
 
 namespace ExchangeRates.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("")]
     [ApiController]
     public class ValuteController : ControllerBase
     {
-        public ValuteController()
+        private readonly IGetValute _valute;
+        private readonly ILogger _logger;
+
+        public ValuteController(IGetValute valute, ILogger logger)
         {
-            
+            _valute = valute;
+            _logger = logger;
         }
-        public IActionResult GetUSD()
+
+        [HttpGet("USD")]
+        public async Task<IActionResult> GetUSD()
         {
-            return new JsonResult();
+            _logger.Information("Запрос валюты USD");
+            var res = await _valute.GetValuteDay("USD", CancellationToken.None, day: 7);
+            return new JsonResult(res);
         }
     }
 }

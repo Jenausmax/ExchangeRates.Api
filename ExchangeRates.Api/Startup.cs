@@ -31,6 +31,7 @@ namespace ExchangeRates.Api
             services.AddScoped<IApiClient, ApiClientService>();
             services.AddScoped<IProcessingService, ProcessingService>();
             services.AddScoped<ISaveService, SaveService>();
+            services.AddTransient<IGetValute, GetValuteService>();
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryDbSQLite<>));
             
             services.Configure<ClientConfig>(Configuration.GetSection("ClientConfig"));
