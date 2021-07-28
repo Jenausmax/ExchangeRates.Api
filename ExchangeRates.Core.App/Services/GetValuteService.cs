@@ -26,7 +26,10 @@ namespace ExchangeRates.Core.App.Services
             if (valutes.Any())
             {
                 var count = valutes.Count();
-                var valutesDay = valutes.OrderBy(i => i.DateSave).Skip(count - day);
+                var valutesDay = valutes
+                    .OrderBy(i => i.DateSave)
+                    .Skip(count - day);
+
                 var valList = new List<GetValuteModel>();
                 if (valutesDay.Any())
                 {
