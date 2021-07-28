@@ -541,14 +541,14 @@ namespace ExchangeRates.Core.App.Services
                 };
                 listValute.Add(zar);
 
-                _logger.Information("Начато сохранение", typeof(SaveService));
+                _logger.Information("Save run", typeof(SaveService));
                 await _repository.AddCollection(listValute, cancel);
-                _logger.Information("Сохранено.", typeof(SaveService));
+                _logger.Information("Save succesful.", typeof(SaveService));
                 return true;
             }
             else
             {
-                _logger.Error("Ошибка! Root item = null", typeof(SaveService));
+                _logger.Error($"Error: {typeof(SaveService)}");
                 return false;
             }
             

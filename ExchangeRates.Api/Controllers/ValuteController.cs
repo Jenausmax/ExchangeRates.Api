@@ -1,13 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using ExchangeRates.Core.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Serilog;
 using System.Threading;
 using System.Threading.Tasks;
-using ExchangeRates.Core.Domain.Interfaces;
-using ExchangeRates.Core.Domain.Models;
-using Serilog;
 
 namespace ExchangeRates.Api.Controllers
 {
@@ -25,9 +20,9 @@ namespace ExchangeRates.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GetUSD(string charCode, int day)
+        public async Task<IActionResult> Get(string charCode, int day)
         {
-            _logger.Information("Запрос валюты USD");
+            _logger.Information("Request valute");
             var res = await _valute.GetValuteDay(charCode, CancellationToken.None, day: day);
             return new JsonResult(res);
         }

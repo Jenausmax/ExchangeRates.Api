@@ -29,7 +29,6 @@ namespace ExchangeRates.Core.App.Services
         {
             try
             {
-                _logger.Information("Обращение к методу RequestProcessing()");
                 var resp = await _client.Client.GetAsync(_config.Value.SiteGet);
                 var resultContent = await resp.Content.ReadAsStreamAsync();
                 var res = await JsonSerializer.DeserializeAsync<Root>(resultContent);
@@ -38,7 +37,7 @@ namespace ExchangeRates.Core.App.Services
             }
             catch (Exception e)
             {
-                _logger.Error(e, "Error: Deserialize");
+                _logger.Error(e, $"Error: Deserialize {typeof(ProcessingService)}");
                 Console.WriteLine(e);
                 throw;
             }

@@ -37,10 +37,10 @@ namespace ExchangeRates.Maintenance.Jobs
 
                 try
                 {
-                    _logger.Information("Задача начата.", typeof(JobsCreateValute));
+                    _logger.Information("Task run.", typeof(JobsCreateValute));
                     var processing = await processingService.RequestProcessing(stoppingToken);
                     var res = await saveService.SaveSet(processing, stoppingToken);
-                    _logger.Information("Задача выполнена успешно.", typeof(JobsCreateValute));
+                    _logger.Information("Task succesful.", typeof(JobsCreateValute));
                 }
                 catch (Exception e)
                 {
