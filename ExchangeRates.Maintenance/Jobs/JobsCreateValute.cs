@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
 using System;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
