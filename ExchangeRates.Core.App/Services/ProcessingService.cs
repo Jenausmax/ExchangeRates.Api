@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExchangeRates.Core.App.Services
@@ -24,7 +25,7 @@ namespace ExchangeRates.Core.App.Services
             _logger = logger;
         }
 
-        public async Task<Root> RequestProcessing()
+        public async Task<Root> RequestProcessing(CancellationToken cancel)
         {
             try
             {

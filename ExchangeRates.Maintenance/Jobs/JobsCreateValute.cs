@@ -28,7 +28,7 @@ namespace ExchangeRates.Maintenance.Jobs
             try
             {
                 _logger.Information("Задача начата.", typeof(JobsCreateValute));
-                var processing = await processingService.RequestProcessing();
+                var processing = await processingService.RequestProcessing(stoppingToken);
                 var res = await saveService.SaveSet(processing, stoppingToken);
                 _logger.Information("Задача выполнена успешно.", typeof(JobsCreateValute));
             }
