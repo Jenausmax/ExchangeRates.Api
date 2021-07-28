@@ -24,11 +24,11 @@ namespace ExchangeRates.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet("USD")]
-        public async Task<IActionResult> GetUSD()
+        [HttpPost]
+        public async Task<IActionResult> GetUSD(string charCode, int day)
         {
             _logger.Information("Запрос валюты USD");
-            var res = await _valute.GetValuteDay("USD", CancellationToken.None, day: 7);
+            var res = await _valute.GetValuteDay(charCode, CancellationToken.None, day: day);
             return new JsonResult(res);
         }
     }
