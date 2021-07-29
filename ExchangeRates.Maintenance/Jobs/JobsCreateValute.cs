@@ -26,8 +26,10 @@ namespace ExchangeRates.Maintenance.Jobs
         {
             DateTime timeFormat;
             DateTime timeNowFormat;
-            var cur = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
-            DateTime.TryParse(cur, out timeNowFormat);
+             
+            var cur = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+            DateTime.TryParseExact(cur, "dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out timeNowFormat);
             DateTime.TryParse(_config.Value.TimeUpdateJobs, out timeFormat);
 
             if (timeFormat == timeNowFormat)
