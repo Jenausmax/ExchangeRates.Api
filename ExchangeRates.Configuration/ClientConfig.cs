@@ -6,6 +6,7 @@
         public string SiteGet { get; set; }
         public int PeriodMinute { get; set; }
         public string TimeUpdateJobs { get; set; }
+        public bool JobsValute { get; set; }
         
     }
 }

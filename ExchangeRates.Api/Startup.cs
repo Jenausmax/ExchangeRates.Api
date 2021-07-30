@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace ExchangeRates.Api
@@ -23,6 +24,7 @@ namespace ExchangeRates.Api
         private IConfiguration Configuration { get; }
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddControllers();
             services.AddDbContext<DataDb>(options =>
                 options.UseSqlite(Configuration.GetConnectionString("DbData"))
                        .UseSqlite(sqliteOptionsAction: b => b.MigrationsAssembly("ExchangeRates.Migrations")));
@@ -35,10 +37,12 @@ namespace ExchangeRates.Api
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryDbSQLite<>));
             
             services.Configure<ClientConfig>(Configuration.GetSection("ClientConfig"));
+            var con = Configuration["ClientConfig:JobsValute"];
 
-            services.AddHostedService<JobsCreateValute>();
-
-            services.AddControllers();
+            if (con == "True")
+            {
+                services.AddHostedService<JobsCreateValute>();
+            }
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

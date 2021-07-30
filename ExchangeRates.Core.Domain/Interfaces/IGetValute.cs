@@ -10,6 +10,6 @@ namespace ExchangeRates.Core.Domain.Interfaces
 {
     public interface IGetValute
     {
-        Task<List<GetValuteModel>> GetValuteDay(string charCode, CancellationToken cancel, int day = 1);
+        Task<GetValute> GetValuteDay(string charCode, CancellationToken cancel, int day = 1);
     }
 }

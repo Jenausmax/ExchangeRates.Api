@@ -20,7 +20,7 @@ namespace ExchangeRates.Core.App.Services
             _logger = logger;
         }
 
-        public async Task<List<GetValuteModel>> GetValuteDay(string charCode, CancellationToken cancel, int day = 1)
+        public async Task<GetValute> GetValuteDay(string charCode, CancellationToken cancel, int day = 1)
         {
             var valutes = await _repository.GetCollection(charCode, cancel);
             if (valutes.Any())
@@ -47,7 +47,9 @@ namespace ExchangeRates.Core.App.Services
                     }
                 }
 
-                return valList;
+                var res = new GetValute(){GetValuteModels = valList};
+
+                return res;
             }
             _logger.Error($"Type error: {typeof(GetValuteService)} Collection null");
             return null;
