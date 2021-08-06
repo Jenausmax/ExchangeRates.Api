@@ -2,6 +2,36 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <StartupObject>ExchangeRates.Api.Program</StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog" Version="2.10.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
+    <PackageReference Include="Serilog.Settings.AppSettings" Version="2.2.2" />
+    <PackageReference Include="Serilog.Sinks.SQLite" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExchangeRates.Configuration\ExchangeRates.Configuration.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Core.App\ExchangeRates.Core.App.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Infrastructure.SQLite\ExchangeRates.Infrastructure.SQLite.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Maintenance\ExchangeRates.Maintenance.csproj" />
+    <ProjectReference Include="..\ExchangeRates.Migrations\ExchangeRates.Migrations.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Data.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="log.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>
