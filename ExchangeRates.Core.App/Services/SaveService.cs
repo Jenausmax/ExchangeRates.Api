@@ -4,6 +4,7 @@ using ExchangeRates.Infrastructure.DB.Models;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -552,6 +553,20 @@ namespace ExchangeRates.Core.App.Services
                 return false;
             }
             
+        }
+
+        public async Task<bool> SaveSetNoDublicate(Root item, CancellationToken cancel)
+        {
+            var collection = await _repository.GetCollection(cancel);
+            var col = collection.ToList().Where(i => i.DateValute == item.Date);
+
+            if (!col.Any())
+            {
+                await SaveSet(item, cancel);
+                return true;
+            }
+
+            return false;
         }
     }
 }

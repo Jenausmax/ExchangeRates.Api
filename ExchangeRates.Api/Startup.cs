@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace ExchangeRates.Api
@@ -38,10 +37,15 @@ namespace ExchangeRates.Api
             
             services.Configure<ClientConfig>(Configuration.GetSection("ClientConfig"));
             var con = Configuration["ClientConfig:JobsValute"];
+            var conJobsToHour = Configuration["ClientConfig:JobsValuteToHour"];
 
             if (con == "True")
             {
                 services.AddHostedService<JobsCreateValute>();
+            }
+            if (conJobsToHour == "True")
+            {
+                services.AddHostedService<JobsCreateValuteToHour>();
             }
         }
 

@@ -7,6 +7,8 @@
         public int PeriodMinute { get; set; }
         public string TimeUpdateJobs { get; set; }
         public bool JobsValute { get; set; }
-        
+        public bool JobsValuteToHour { get; set; }
+
+
     }
 }
