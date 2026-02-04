@@ -77,20 +77,23 @@ namespace ExchangeRates.Core.App.Services
                 };
                 listValute.Add(azn);
 
-                var bgn = new ValuteModelDb()
+                if (valutes.BGN != null)
                 {
-                    NumCode = valutes.BGN.NumCode,
-                    CharCode = valutes.BGN.CharCode,
-                    Nominal = valutes.BGN.Nominal,
-                    Name = valutes.BGN.Name,
-                    Value = valutes.BGN.Value,
-                    Previous = valutes.BGN.Previous,
-                    DateValute = date,
-                    TimeStampUpdateValute = stampDate,
-                    DateSave = d,
-                    ValuteId = valutes.BGN.Id
-                };
-                listValute.Add(bgn);
+                    var bgn = new ValuteModelDb()
+                    {
+                        NumCode = valutes.BGN.NumCode,
+                        CharCode = valutes.BGN.CharCode,
+                        Nominal = valutes.BGN.Nominal,
+                        Name = valutes.BGN.Name,
+                        Value = valutes.BGN.Value,
+                        Previous = valutes.BGN.Previous,
+                        DateValute = date,
+                        TimeStampUpdateValute = stampDate,
+                        DateSave = d,
+                        ValuteId = valutes.BGN.Id
+                    };
+                    listValute.Add(bgn);
+                }
 
                 var brl = new ValuteModelDb()
                 {

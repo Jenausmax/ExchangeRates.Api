@@ -49,8 +49,11 @@ namespace ExchangeRates.Api
             }
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, DataDb dataDb)
         {
+            // Автоматическое применение миграций при старте
+            dataDb.Database.Migrate();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

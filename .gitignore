@@ -363,3 +363,10 @@ MigrationBackup/
 FodyWeavers.xsd
 # Claude Code settings
 .claude/
+
+# Data and logs directories
+data/
+logs/
+
+# JetBrains Rider
+.idea/
