@@ -3,27 +3,27 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Api", "ExchangeRates.Api\ExchangeRates.Api.csproj", "{36E5DCFE-D66F-4F7E-B740-6658AA47160D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Api", "src\ExchangeRates.Api\ExchangeRates.Api.csproj", "{36E5DCFE-D66F-4F7E-B740-6658AA47160D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{D983B3BA-842A-46BB-A33B-2AF9FB86D0EF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{6AD393EB-EDC9-45B7-AD63-894040D90918}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Core.Domain", "ExchangeRates.Core.Domain\ExchangeRates.Core.Domain.csproj", "{F791E30D-B4DD-415E-B1EA-A860725460C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Core.Domain", "src\ExchangeRates.Core.Domain\ExchangeRates.Core.Domain.csproj", "{F791E30D-B4DD-415E-B1EA-A860725460C3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{4D99FE7A-924A-4680-B5F8-D0BEE3EA1BC6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Core.App", "ExchangeRates.Core.App\ExchangeRates.Core.App.csproj", "{F6E8FA09-65C3-4804-AA81-7E12308993F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Core.App", "src\ExchangeRates.Core.App\ExchangeRates.Core.App.csproj", "{F6E8FA09-65C3-4804-AA81-7E12308993F8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Infrastructure.DB", "ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj", "{669E8E06-254D-420B-91BC-A5CD4075AD34}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Infrastructure.DB", "src\ExchangeRates.Infrastructure.DB\ExchangeRates.Infrastructure.DB.csproj", "{669E8E06-254D-420B-91BC-A5CD4075AD34}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Infrastructure.SQLite", "ExchangeRates.Infrastructure.SQLite\ExchangeRates.Infrastructure.SQLite.csproj", "{417C3C37-DDB2-47C2-8A5F-9C869BC9C90B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Infrastructure.SQLite", "src\ExchangeRates.Infrastructure.SQLite\ExchangeRates.Infrastructure.SQLite.csproj", "{417C3C37-DDB2-47C2-8A5F-9C869BC9C90B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Configuration", "ExchangeRates.Configuration\ExchangeRates.Configuration.csproj", "{FB800AA0-599E-4FA1-92D8-063BFF052451}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Configuration", "src\ExchangeRates.Configuration\ExchangeRates.Configuration.csproj", "{FB800AA0-599E-4FA1-92D8-063BFF052451}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Migrations", "ExchangeRates.Migrations\ExchangeRates.Migrations.csproj", "{7248955F-31C3-44C0-A041-FE8D1ECA1BF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExchangeRates.Migrations", "src\ExchangeRates.Migrations\ExchangeRates.Migrations.csproj", "{7248955F-31C3-44C0-A041-FE8D1ECA1BF3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExchangeRates.Maintenance", "ExchangeRates.Maintenance\ExchangeRates.Maintenance.csproj", "{D26741C6-C130-46A4-AE80-3BBD5F2840C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExchangeRates.Maintenance", "src\ExchangeRates.Maintenance\ExchangeRates.Maintenance.csproj", "{D26741C6-C130-46A4-AE80-3BBD5F2840C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
