@@ -31,8 +31,8 @@ dotnet ef migrations add <MigrationName> --project src/ExchangeRates.Migrations 
 ### Docker
 
 ```bash
-# Сборка Docker образа
-docker build -t exchangerates-api:latest .
+# Сборка Docker образа (из папки src)
+cd src && docker build -t exchangerates-api:latest .
 
 # Запуск контейнера
 docker run -d -p 5000:80 -p 5001:443 \
@@ -41,7 +41,7 @@ docker run -d -p 5000:80 -p 5001:443 \
   --name exchangerates-api \
   exchangerates-api:latest
 
-# Использование docker-compose (рекомендуется)
+# Использование docker-compose (рекомендуется, из корня проекта)
 docker-compose up -d
 
 # Остановка контейнеров
@@ -121,10 +121,10 @@ docker-compose up -d --build
 
 Приложение можно запустить в Docker-контейнере:
 
-- **Dockerfile**: Multi-stage build для оптимизации размера образа
+- **Dockerfile**: Находится в папке `src/`. Multi-stage build для оптимизации размера образа
   - Этап 1 (build): .NET SDK 5.0 для сборки
   - Этап 2 (runtime): .NET ASP.NET Runtime 5.0 для запуска
-- **docker-compose.yml**: Конфигурация для удобного запуска с настройками
+- **docker-compose.yml**: В корне проекта. Конфигурация для удобного запуска с настройками
 - **Volumes**:
   - `./data:/app/data` - база данных SQLite
   - `./logs:/app/logs` - логи приложения
@@ -133,6 +133,8 @@ docker-compose up -d --build
   - `5001:443` - HTTPS
 
 Все настройки (периоды задач, включение/отключение джобов) можно переопределить через переменные окружения в `docker-compose.yml`.
+
+**Примечание**: При первой сборке Docker скачает базовые образы (~140MB), что может занять время в зависимости от скорости интернета.
 
 ## Источник данных API
 
