@@ -13,8 +13,8 @@ ExchangeRates.Api - это ASP.NET Core API для получения и хра�
 ## Команды для сборки и запуска
 
 ```bash
-# Сборка решения
-dotnet build ExchangeRates.Api.sln
+# Сборка решения (из корня репозитория)
+dotnet build src/ExchangeRates.Api.sln
 
 # Запуск API
 dotnet run --project src/ExchangeRates.Api/ExchangeRates.Api.csproj
