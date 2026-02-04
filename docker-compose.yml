@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  exchangerates-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exchangerates-api
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DbData=Data Source=/app/data/Data.db;foreign keys=false;
+      - ClientConfig__SiteApi=https://www.cbr-xml-daily.ru/
+      - ClientConfig__SiteGet=daily_json.js
+      - ClientConfig__PeriodMinute=30
+      - ClientConfig__TimeUpdateJobs=08:40
+      - ClientConfig__JobsValute=false
+      - ClientConfig__JobsValuteToHour=true
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - exchangerates-network
+
+networks:
+  exchangerates-network:
+    driver: bridge

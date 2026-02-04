@@ -12,6 +12,8 @@ ExchangeRates.Api - это ASP.NET Core API для получения и хра�
 
 ## Команды для сборки и запуска
 
+### Локальная разработка
+
 ```bash
 # Сборка решения (из корня репозитория)
 dotnet build src/ExchangeRates.Api.sln
@@ -24,6 +26,32 @@ dotnet ef database update --project src/ExchangeRates.Migrations --startup-proje
 
 # Добавление новой миграции
 dotnet ef migrations add <MigrationName> --project src/ExchangeRates.Migrations --startup-project src/ExchangeRates.Api
+```
+
+### Docker
+
+```bash
+# Сборка Docker образа
+docker build -t exchangerates-api:latest .
+
+# Запуск контейнера
+docker run -d -p 5000:80 -p 5001:443 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/logs:/app/logs \
+  --name exchangerates-api \
+  exchangerates-api:latest
+
+# Использование docker-compose (рекомендуется)
+docker-compose up -d
+
+# Остановка контейнеров
+docker-compose down
+
+# Просмотр логов
+docker-compose logs -f
+
+# Пересборка и перезапуск
+docker-compose up -d --build
 ```
 
 ## Архитектура
@@ -88,6 +116,23 @@ dotnet ef migrations add <MigrationName> --project src/ExchangeRates.Migrations 
 - База данных SQLite (`log.db`) для постоянных логов
 
 Логирование настраивается в `Program.cs` во время загрузки хоста.
+
+## Docker
+
+Приложение можно запустить в Docker-контейнере:
+
+- **Dockerfile**: Multi-stage build для оптимизации размера образа
+  - Этап 1 (build): .NET SDK 5.0 для сборки
+  - Этап 2 (runtime): .NET ASP.NET Runtime 5.0 для запуска
+- **docker-compose.yml**: Конфигурация для удобного запуска с настройками
+- **Volumes**:
+  - `./data:/app/data` - база данных SQLite
+  - `./logs:/app/logs` - логи приложения
+- **Ports**:
+  - `5000:80` - HTTP
+  - `5001:443` - HTTPS
+
+Все настройки (периоды задач, включение/отключение джобов) можно переопределить через переменные окружения в `docker-compose.yml`.
 
 ## Источник данных API
 
