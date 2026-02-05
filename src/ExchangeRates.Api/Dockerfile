@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /app
 
 # Копируем .sln и .csproj файлы для restore
-COPY *.sln ./
+COPY ExchangeRates.Api.sln ./
 COPY ExchangeRates.Api/*.csproj ./ExchangeRates.Api/
 COPY ExchangeRates.Configuration/*.csproj ./ExchangeRates.Configuration/
 COPY ExchangeRates.Core.App/*.csproj ./ExchangeRates.Core.App/
