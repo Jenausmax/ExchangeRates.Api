@@ -4,7 +4,7 @@ services:
   exchangerates-api:
     build:
       context: ./src
-      dockerfile: Dockerfile
+      dockerfile: ExchangeRates.Api/Dockerfile
     container_name: exchangerates-api
     ports:
       - "5000:80"
@@ -22,6 +22,37 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - exchangerates-network
+
+  exchangerates-bot:
+    build:
+      context: ./src
+      dockerfile: bot/ExchangeRatesBot/Dockerfile
+    container_name: exchangerates-bot
+    depends_on:
+      - exchangerates-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      # КРИТИЧНО: Внутренний адрес API в Docker сети
+      - BotConfig__UrlRequest=http://exchangerates-api:80/
+      # Токен бота из .env файла
+      - BotConfig__BotToken=${BOT_TOKEN}
+      # Режим работы: true = polling (рекомендуется для Docker), false = webhook
+      - BotConfig__UsePolling=${BOT_USE_POLLING:-true}
+      # Webhook URL (используется только если UsePolling=false)
+      - BotConfig__Webhook=${BOT_WEBHOOK:-}
+      # Время рассылки сообщений
+      - BotConfig__TimeOne=${BOT_TIME_ONE:-14:05}
+      - BotConfig__TimeTwo=${BOT_TIME_TWO:-15:32}
+      # ОТДЕЛЬНАЯ БД бота (не путать с БД API)
+      - ConnectionStrings__SqliteConnection=Data Source=/app/data/Data.db;foreign keys=false;
+    volumes:
+      # ОТДЕЛЬНЫЕ volumes от API
+      - ./bot-data:/app/data
+      - ./bot-logs:/app/logs
     restart: unless-stopped
     networks:
       - exchangerates-network

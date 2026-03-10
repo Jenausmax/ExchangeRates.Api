@@ -41,6 +41,13 @@ namespace ExchangeRatesBot
 
             services.AddHostedService<JobsSendMessageUsers>();
 
+            // Условная регистрация Polling сервиса
+            var botConfig = Config.GetSection("BotConfig").Get<BotConfig>();
+            if (botConfig.UsePolling)
+            {
+                services.AddHostedService<PollingBackgroundService>();
+            }
+
             services.AddControllers().AddNewtonsoftJson();
         }
 

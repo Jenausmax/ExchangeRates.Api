@@ -367,6 +367,11 @@ FodyWeavers.xsd
 # Data and logs directories
 data/
 logs/
+bot-data/
+bot-logs/
+
+# Environment variables (contains secrets)
+.env
 
 # JetBrains Rider
 .idea/

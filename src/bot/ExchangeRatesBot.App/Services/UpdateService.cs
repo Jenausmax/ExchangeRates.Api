@@ -32,12 +32,10 @@ namespace ExchangeRatesBot.App.Services
                     await _botService.Client.SendTextMessageAsync(newMessage.Chat.Id,
                         newMessage.Text,
                         parseMode: ParseMode.Markdown,
-                        entities: null,
                         disableWebPagePreview: false,
                         disableNotification: false,
                         replyToMessageId: 0,
-                        allowSendingWithoutReply: false,
-                        keyboard);
+                        replyMarkup: keyboard);
                 }
             }
 
@@ -50,12 +48,10 @@ namespace ExchangeRatesBot.App.Services
                     await _botService.Client.SendTextMessageAsync(newMessageCallbackQueryMessage.Chat.Id,
                         newMessageCallbackQueryMessage.Text,
                         parseMode: ParseMode.Markdown,
-                        entities: null,
                         disableWebPagePreview: false,
                         disableNotification: false,
                         replyToMessageId: 0,
-                        allowSendingWithoutReply: false,
-                        keyboard);
+                        replyMarkup: keyboard);
                 }
             }
 
