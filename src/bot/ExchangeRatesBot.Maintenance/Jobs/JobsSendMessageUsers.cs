@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ExchangeRatesBot.DB.Models;
 using ExchangeRatesBot.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using ExchangeRatesBot.App.Phrases;
 using System.Collections.Generic;
@@ -69,7 +70,10 @@ namespace ExchangeRatesBot.Maintenance.Jobs
             {
                 foreach (var userDb in users)
                 {
-                    await botService.Client.SendTextMessageAsync(userDb.ChatId, message, parseMode: ParseMode.Markdown);
+                    await botService.Client.SendTextMessageAsync(
+                        chatId: userDb.ChatId,
+                        text: message,
+                        parseMode: ParseMode.Markdown);
                 }
             }
         }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ExchangeRatesBot.Domain.Interfaces;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -19,7 +20,7 @@ namespace ExchangeRatesBot.App.Services
             _botService = botService;
         }
 
-        public async Task EchoTextMessageAsync(Update update, string message, IReplyMarkup replyMarkup = default)
+        public async Task EchoTextMessageAsync(Update update, string message, IReplyMarkup replyMarkup = null)
         {
             if (update == null) return;
 
@@ -29,12 +30,10 @@ namespace ExchangeRatesBot.App.Services
                 {
                     var newMessage = update.Message;
                     newMessage.Text = message;
-                    await _botService.Client.SendTextMessageAsync(newMessage.Chat.Id,
-                        newMessage.Text,
+                    await _botService.Client.SendTextMessageAsync(
+                        chatId: newMessage.Chat.Id,
+                        text: newMessage.Text,
                         parseMode: ParseMode.Markdown,
-                        disableWebPagePreview: false,
-                        disableNotification: false,
-                        replyToMessageId: 0,
                         replyMarkup: replyMarkup);
                 }
             }
@@ -45,12 +44,10 @@ namespace ExchangeRatesBot.App.Services
                 {
                     var newMessageCallbackQueryMessage = update.CallbackQuery.Message;
                     newMessageCallbackQueryMessage.Text = message;
-                    await _botService.Client.SendTextMessageAsync(newMessageCallbackQueryMessage.Chat.Id,
-                        newMessageCallbackQueryMessage.Text,
+                    await _botService.Client.SendTextMessageAsync(
+                        chatId: newMessageCallbackQueryMessage.Chat.Id,
+                        text: newMessageCallbackQueryMessage.Text,
                         parseMode: ParseMode.Markdown,
-                        disableWebPagePreview: false,
-                        disableNotification: false,
-                        replyToMessageId: 0,
                         replyMarkup: replyMarkup);
                 }
             }

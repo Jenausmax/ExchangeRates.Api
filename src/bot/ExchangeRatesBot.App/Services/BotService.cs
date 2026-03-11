@@ -2,7 +2,9 @@
 using ExchangeRatesBot.Domain.Interfaces;
 using Microsoft.Extensions.Options;
 using Serilog;
+using System.Threading.Tasks;
 using Telegram.Bot;
+using Telegram.Bot.Extensions;
 
 namespace ExchangeRatesBot.App.Services
 {
@@ -18,26 +20,29 @@ namespace ExchangeRatesBot.App.Services
             _logger = logger;
             Client = new TelegramBotClient(_config.Value.BotToken);
 
-            // Настройка режима работы бота
-            if (_config.Value.UsePolling)
+            // Настройка режима работы бота (async initialization)
+            Task.Run(async () =>
             {
-                // Polling режим: удаляем webhook если он был установлен
-                Client.DeleteWebhookAsync().Wait();
-                _logger.Information("Bot initialized in POLLING mode. Webhook removed.");
-            }
-            else
-            {
-                // Webhook режим: устанавливаем webhook URL
-                if (string.IsNullOrWhiteSpace(_config.Value.Webhook))
+                if (_config.Value.UsePolling)
                 {
-                    _logger.Warning("Webhook mode enabled but Webhook URL is empty! Bot may not receive updates.");
+                    // Polling режим: удаляем webhook если он был установлен
+                    await Client.DeleteWebhookAsync();
+                    _logger.Information("Bot initialized in POLLING mode. Webhook removed.");
                 }
                 else
                 {
-                    Client.SetWebhookAsync(_config.Value.Webhook).Wait();
-                    _logger.Information($"Bot initialized in WEBHOOK mode. Webhook set to: {_config.Value.Webhook}");
+                    // Webhook режим: устанавливаем webhook URL
+                    if (string.IsNullOrWhiteSpace(_config.Value.Webhook))
+                    {
+                        _logger.Warning("Webhook mode enabled but Webhook URL is empty! Bot may not receive updates.");
+                    }
+                    else
+                    {
+                        await Client.SetWebhookAsync(_config.Value.Webhook);
+                        _logger.Information($"Bot initialized in WEBHOOK mode. Webhook set to: {_config.Value.Webhook}");
+                    }
                 }
-            }
+            }).GetAwaiter().GetResult();
         }
     }
 }

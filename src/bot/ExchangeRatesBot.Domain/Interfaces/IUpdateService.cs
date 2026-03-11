@@ -13,6 +13,6 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// <param name="message">Новое сообщение.</param>
         /// <param name="replyMarkup">Клавиатура для взаимодействия (Inline или Reply).</param>
         /// <returns></returns>
-        Task EchoTextMessageAsync(Update update, string message, IReplyMarkup replyMarkup = default);
+        Task EchoTextMessageAsync(Update update, string message, IReplyMarkup replyMarkup = null);
     }
 }

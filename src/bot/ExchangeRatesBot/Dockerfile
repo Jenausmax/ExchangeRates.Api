@@ -1,5 +1,5 @@
 # Этап 1: Build
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 
 # Копируем .sln и .csproj файлы для restore
@@ -27,7 +27,7 @@ COPY bot/ExchangeRatesBot.Migrations/ ./bot/ExchangeRatesBot.Migrations/
 RUN dotnet publish bot/ExchangeRatesBot/ExchangeRatesBot.csproj -c Release -o /app/publish
 
 # Этап 2: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Копируем собранное приложение
