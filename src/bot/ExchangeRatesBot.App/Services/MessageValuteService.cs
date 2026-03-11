@@ -95,6 +95,13 @@ namespace ExchangeRatesBot.App.Services
             }
             // Последний элемент (самая старая дата) остаётся без разницы (null)
 
+            // Защита: после дедупликации список может оказаться пустым
+            if (valutes == null || valutes.Count == 0)
+            {
+                _logger.Warning($"Type warning: {typeof(MessageValuteService)}: No valute data for charCode={charCode}, day={day}");
+                return string.Empty;
+            }
+
             // Сборка итоговой строки
             var sb = new StringBuilder();
             sb.AppendLine($"{valutes[0].CharCode}/RUB -- {valutes[0].Name}");
@@ -115,6 +122,11 @@ namespace ExchangeRatesBot.App.Services
             for (int i = 0; i < charCodesCollection.Length; i++)
             {
                 var valuteString = await GetValuteMessage(day, charCodesCollection[i], cancel);
+
+                // Если данных нет — пропускаем блок и не добавляем разделитель
+                if (string.IsNullOrEmpty(valuteString))
+                    continue;
+
                 sb.Append(valuteString);
 
                 // Пустая строка-разделитель между блоками валют (кроме последней)
