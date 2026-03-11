@@ -95,29 +95,53 @@ namespace ExchangeRatesBot.App.Services
         private async Task MessageCommand(Update update)
         {
             var message = update.Message.Text;
+            if (string.IsNullOrEmpty(message))
+            {
+                await _updateService.EchoTextMessageAsync(
+                    update,
+                    BotPhrases.Error,
+                    default);
+                return;
+            }
             switch (message)
             {
+                // --- Команда /start: приветствие + ReplyKeyboard ---
                 case "/start":
                     await _updateService.EchoTextMessageAsync(
                         update,
-                        BotPhrases.StartMenu + $"\n\r /subscribe - подписка \n\r /valuteoneday - курс на сегодня \n\r /valutesevendays - изменения курса за последние 7 дней \n\r");
+                        BotPhrases.StartMenu,
+                        GetMainKeyboard());
                     break;
 
+                // --- Команда /help и кнопка "Помощь" ---
+                case "/help":
+                case var txt when txt == BotPhrases.BtnHelp:
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.HelpMessage);
+                    break;
+
+                // --- Команда /subscribe и кнопка "Подписка" ---
                 case "/subscribe":
+                case var txt when txt == BotPhrases.BtnSubscribe:
                     await _updateService.EchoTextMessageAsync(
                         update,
                         BotPhrases.StartMenu,
                         new InlineKeyboardMarkup(Menu()));
-                    break; 
+                    break;
 
+                // --- Команда /valutesevendays и кнопка "За 7 дней" ---
                 case "/valutesevendays":
+                case var txt when txt == BotPhrases.BtnValuteSevenDays:
                     await _updateService.EchoTextMessageAsync(
                         update,
                         await _valuteService.GetValuteMessage(8, BotPhrases.Valutes, CancellationToken.None),
                         default);
                     break;
 
+                // --- Команда /valuteoneday и кнопка "Курс сегодня" ---
                 case "/valuteoneday":
+                case var txt when txt == BotPhrases.BtnValuteOneDay:
                     await _updateService.EchoTextMessageAsync(
                         update,
                         await _valuteService.GetValuteMessage(1, BotPhrases.Valutes, CancellationToken.None),
@@ -139,6 +163,22 @@ namespace ExchangeRatesBot.App.Services
             buttons.Add(InlineKeyboardButton.WithCallbackData("Подписаться"));
             buttons.Add(InlineKeyboardButton.WithCallbackData("Отписаться"));
             return buttons;
+        }
+
+        /// <summary>
+        /// Создает постоянную клавиатуру бота (ReplyKeyboardMarkup).
+        /// Отображается внизу чата и остается до явного удаления.
+        /// </summary>
+        private static ReplyKeyboardMarkup GetMainKeyboard()
+        {
+            return new ReplyKeyboardMarkup(new[]
+            {
+                new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays) },
+                new[] { new KeyboardButton(BotPhrases.BtnSubscribe),    new KeyboardButton(BotPhrases.BtnHelp) }
+            })
+            {
+                ResizeKeyboard = true
+            };
         }
     }
 }

@@ -19,7 +19,7 @@ namespace ExchangeRatesBot.App.Services
             _botService = botService;
         }
 
-        public async Task EchoTextMessageAsync(Update update, string message, InlineKeyboardMarkup keyboard = default)
+        public async Task EchoTextMessageAsync(Update update, string message, IReplyMarkup replyMarkup = default)
         {
             if (update == null) return;
 
@@ -35,7 +35,7 @@ namespace ExchangeRatesBot.App.Services
                         disableWebPagePreview: false,
                         disableNotification: false,
                         replyToMessageId: 0,
-                        replyMarkup: keyboard);
+                        replyMarkup: replyMarkup);
                 }
             }
 
@@ -51,7 +51,7 @@ namespace ExchangeRatesBot.App.Services
                         disableWebPagePreview: false,
                         disableNotification: false,
                         replyToMessageId: 0,
-                        replyMarkup: keyboard);
+                        replyMarkup: replyMarkup);
                 }
             }
 
