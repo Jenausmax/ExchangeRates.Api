@@ -93,6 +93,30 @@ namespace ExchangeRatesBot.App.Services
                 return;
             }
 
+            // Выбор периода статистики
+            if (callbackData.StartsWith("period_"))
+            {
+                var days = int.Parse(callbackData.Substring(7)); // "period_3" -> 3
+                var currencies = _userControl.GetUserCurrencies(_userControl.CurrentUser.ChatId);
+
+                var message = await _valuteService.GetValuteStatisticsMessage(days, currencies, CancellationToken.None);
+
+                if (string.IsNullOrEmpty(message))
+                {
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        "⚠️ Нет данных за указанный период. Попробуйте выбрать меньший период (3-7 дней).",
+                        default);
+                }
+                else
+                {
+                    await _updateService.EchoTextMessageAsync(update, message, default);
+                }
+
+                await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                return;
+            }
+
             switch (callbackData)
             {
                 case "save_currencies":
@@ -186,6 +210,15 @@ namespace ExchangeRatesBot.App.Services
                         default);
                     break;
 
+                // --- Команда /statistics и кнопка "Статистика" ---
+                case "/statistics":
+                case var txt when txt == BotPhrases.BtnStatistics:
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        "📊 Выберите период для статистики:",
+                        new InlineKeyboardMarkup(PeriodSelectionKeyboard()));
+                    break;
+
                 default:
                     await _updateService.EchoTextMessageAsync(
                         update,
@@ -211,8 +244,8 @@ namespace ExchangeRatesBot.App.Services
         {
             return new ReplyKeyboardMarkup(new[]
             {
-                new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays), new KeyboardButton(BotPhrases.BtnCurrencies) },
-                new[] { new KeyboardButton(BotPhrases.BtnSubscribe),    new KeyboardButton(BotPhrases.BtnHelp) }
+                new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays), new KeyboardButton(BotPhrases.BtnStatistics) },
+                new[] { new KeyboardButton(BotPhrases.BtnCurrencies),     new KeyboardButton(BotPhrases.BtnSubscribe),     new KeyboardButton(BotPhrases.BtnHelp) }
             })
             {
                 ResizeKeyboard = true
@@ -305,6 +338,27 @@ namespace ExchangeRatesBot.App.Services
             });
 
             return rows;
+        }
+
+        /// <summary>
+        /// Генерация inline-клавиатуры для выбора периода статистики.
+        /// </summary>
+        private static List<List<InlineKeyboardButton>> PeriodSelectionKeyboard()
+        {
+            return new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("3 дня", "period_3"),
+                    InlineKeyboardButton.WithCallbackData("7 дней", "period_7"),
+                    InlineKeyboardButton.WithCallbackData("14 дней", "period_14")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("21 день", "period_21"),
+                    InlineKeyboardButton.WithCallbackData("30 дней", "period_30")
+                }
+            };
         }
     }
 }

@@ -48,8 +48,8 @@ namespace ExchangeRatesBot.App.Services
             var diff = valute.AbsoluteDiff.Value;
             var percent = valute.PercentDiff.Value;
 
-            // Определяем трендовый индикатор с порогом 0.005 для фильтрации шума
-            var trend = Math.Abs(diff) <= 0.005 ? "→" : (diff > 0 ? "↑" : "↓");
+            // Определяем трендовый индикатор с порогом 0.01 для фильтрации шума
+            var trend = Math.Abs(diff) <= 0.01 ? "→" : (diff > 0 ? "↑" : "↓");
             var sign = diff >= 0 ? "+" : "";
 
             return $"{date}  {value} {trend} {sign}{diff:F2} ({sign}{percent:F2}%)";
@@ -253,6 +253,149 @@ namespace ExchangeRatesBot.App.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Формирует сообщение со статистикой за указанный период с адаптивным форматированием.
+        /// </summary>
+        public async Task<string> GetValuteStatisticsMessage(int days, string[] charCodesCollection, CancellationToken cancel)
+        {
+            var sb = new StringBuilder();
+
+            for (int i = 0; i < charCodesCollection.Length; i++)
+            {
+                var message = await GetValuteStatisticsMessageSingle(days, charCodesCollection[i], cancel);
+                if (!string.IsNullOrEmpty(message))
+                {
+                    sb.Append(message);
+                    if (i < charCodesCollection.Length - 1)
+                        sb.AppendLine();
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Формирует сообщение статистики для одной валюты.
+        /// </summary>
+        private async Task<string> GetValuteStatisticsMessageSingle(int days, string charCode, CancellationToken cancel)
+        {
+            var valutesRoot = await _processingService.RequestProcessing(days, charCode, cancel);
+            if (valutesRoot == null || !valutesRoot.GetValuteModels.Any())
+                return string.Empty;
+
+            var valutes = valutesRoot.GetValuteModels
+                .Select(item => new Valute
+                {
+                    CharCode = item.CharCode,
+                    DateValute = item.DateValute,
+                    Name = item.Name,
+                    Value = item.Value
+                })
+                .GroupBy(e => e.DateValute.Date)
+                .Select(g => g.First())
+                .OrderByDescending(v => v.DateValute)
+                .ToList();
+
+            if (valutes.Count < 2)
+                return string.Empty;
+
+            var stats = CalculateStatistics(valutes.OrderBy(v => v.DateValute).ToList());
+
+            // Адаптивный выбор формата
+            if (days <= 7)
+                return FormatShortPeriodStatistics(valutes, stats);
+            else if (days <= 14)
+                return FormatMediumPeriodStatistics(valutes, stats);
+            else
+                return FormatLongPeriodStatistics(valutes, stats);
+        }
+
+        /// <summary>
+        /// Форматирует статистику для короткого периода (1-7 дней) с детальными данными.
+        /// </summary>
+        private string FormatShortPeriodStatistics(List<Valute> valutes, ValuteStatistics stats)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"{stats.CharCode}/RUB -- {stats.Name}");
+            sb.AppendLine("━━━━━━━━━━━━━━━━━");
+
+            foreach (var valute in valutes)
+            {
+                sb.AppendLine(FormatValuteLine(valute));
+            }
+
+            if (stats.DaysCount >= 2)
+            {
+                sb.AppendLine();
+                sb.AppendLine($" Макс: {stats.MaxValue:0.00} ({stats.MaxDate:dd MMM})");
+                sb.AppendLine($" Мин:  {stats.MinValue:0.00} ({stats.MinDate:dd MMM})");
+                sb.AppendLine($" Изм:  {FormatChange(stats.AbsoluteChange, stats.PercentChange)} за {stats.DaysCount} дн.");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Форматирует статистику для среднего периода (8-14 дней) - смешанный формат.
+        /// </summary>
+        private string FormatMediumPeriodStatistics(List<Valute> valutes, ValuteStatistics stats)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"📊 {stats.CharCode}/RUB -- {stats.Name} ({stats.DaysCount} дней)");
+            sb.AppendLine();
+
+            sb.AppendLine("📊 Последние дни:");
+            foreach (var valute in valutes.Take(3))
+            {
+                sb.AppendLine($" {FormatValuteLine(valute)}");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("📈 Статистика за период:");
+            sb.AppendLine($" ↑ Макс: {stats.MaxValue:0.00} ({stats.MaxDate:dd MMM})");
+            sb.AppendLine($" ↓ Мин:  {stats.MinValue:0.00} ({stats.MinDate:dd MMM})");
+            sb.AppendLine($" ↔ Изм:  {FormatChange(stats.AbsoluteChange, stats.PercentChange)} за {stats.DaysCount} дн.");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Форматирует статистику для длинного периода (15-30 дней) - компактный формат.
+        /// </summary>
+        private string FormatLongPeriodStatistics(List<Valute> valutes, ValuteStatistics stats)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"📊 {stats.CharCode}/RUB -- {stats.Name} ({stats.DaysCount} дней)");
+            sb.AppendLine();
+            sb.AppendLine($"💰 Текущий: {stats.CurrentValue:0.00} руб.");
+            sb.AppendLine();
+            sb.AppendLine("📈 Динамика:");
+            sb.AppendLine($" ↑ Макс: {stats.MaxValue:0.00} руб. ({stats.MaxDate:dd MMM})");
+            sb.AppendLine($" ↓ Мин:  {stats.MinValue:0.00} руб. ({stats.MinDate:dd MMM})");
+            sb.AppendLine($" ↔ Изм:  {FormatChange(stats.AbsoluteChange, stats.PercentChange)}");
+            sb.AppendLine();
+            sb.AppendLine("📉 Тренд за период:");
+            sb.AppendLine($" Начало периода: {valutes.Last().Value:0.00} руб.");
+            sb.AppendLine($" Конец периода:  {valutes.First().Value:0.00} руб.");
+
+            var avgValue = valutes.Average(v => v.Value);
+            sb.AppendLine($" Средний курс:   {avgValue:0.00} руб.");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Форматирует изменение курса с учетом знака и процента.
+        /// </summary>
+        private string FormatChange(double absoluteChange, double percentChange)
+        {
+            if (Math.Abs(absoluteChange) < 0.01)
+                return $"{absoluteChange:0.00} ({percentChange:0.00}%)";
+
+            var sign = absoluteChange >= 0 ? "+" : "";
+            return $"{sign}{absoluteChange:0.00} ({sign}{percentChange:0.00}%)";
         }
     }
 }

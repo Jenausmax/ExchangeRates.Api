@@ -45,6 +45,7 @@
         /// </summary>
         public static string BtnValuteOneDay { get; } = "Курс сегодня";
         public static string BtnValuteSevenDays { get; } = "За 7 дней";
+        public static string BtnStatistics { get; } = "Статистика";
         public static string BtnSubscribe { get; } = "Подписка";
         public static string BtnHelp { get; } = "Помощь";
         public static string BtnCurrencies { get; } = "Валюты";
@@ -56,9 +57,10 @@
             "*Доступные команды:*\n\r" +
             "Курс сегодня -- курсы валют ЦБ РФ на сегодня\n\r" +
             "За 7 дней -- изменения курсов за последние 7 дней\n\r" +
+            "Статистика -- детальная статистика за период (3-30 дней)\n\r" +
             "Валюты -- выбор валют для отслеживания\n\r" +
             "Подписка -- подписаться/отписаться от рассылки курсов\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
-            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /currencies, /subscribe, /help";
+            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /help";
     }
 }

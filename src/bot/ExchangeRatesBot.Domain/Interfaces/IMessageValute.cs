@@ -27,5 +27,15 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Формирует компактную сводку курсов с недельной динамикой для рассылки.
         /// </summary>
         Task<string> GetValuteSummaryMessage(string[] charCodesCollection, CancellationToken cancel);
+
+        /// <summary>
+        /// Формирует компактное сообщение со статистикой за указанный период.
+        /// Использует разные форматы в зависимости от длины периода.
+        /// </summary>
+        /// <param name="days">Количество дней для анализа (3-30)</param>
+        /// <param name="charCodesCollection">Массив кодов валют</param>
+        /// <param name="cancel">Токен отмены</param>
+        /// <returns>Отформатированное сообщение со статистикой</returns>
+        Task<string> GetValuteStatisticsMessage(int days, string[] charCodesCollection, CancellationToken cancel);
     }
 }
