@@ -13,8 +13,8 @@ COPY ExchangeRates.Infrastructure.SQLite/*.csproj ./ExchangeRates.Infrastructure
 COPY ExchangeRates.Maintenance/*.csproj ./ExchangeRates.Maintenance/
 COPY ExchangeRates.Migrations/*.csproj ./ExchangeRates.Migrations/
 
-# Restore зависимостей
-RUN dotnet restore ExchangeRates.Api.sln
+# Restore зависимостей (только API проект, без проектов бота из solution)
+RUN dotnet restore ExchangeRates.Api/ExchangeRates.Api.csproj
 
 # Копируем остальные файлы и собираем
 COPY . ./
