@@ -63,7 +63,7 @@ namespace ExchangeRatesBot.Maintenance.Jobs
 
             var users = usersCollectionDb.Where(u => u.Subscribe == true).ToArray();
 
-            var message = await messageValute.GetValuteMessage(1, BotPhrases.Valutes, cancel);
+            var message = await messageValute.GetValuteSummaryMessage(BotPhrases.Valutes, cancel);
 
             if (users.Any())
             {

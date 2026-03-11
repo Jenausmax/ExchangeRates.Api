@@ -112,6 +112,29 @@ namespace ExchangeRatesBot.App.Services
                 sb.AppendLine(FormatValuteLine(valute));
             }
 
+            // Добавляем блок статистики для периодов от 3 дней и более
+            if (day >= 3 && valutes.Count >= 2)
+            {
+                // Создаем копию списка, отсортированную от старых к новым для CalculateStatistics
+                var valutesSortedAscending = valutes.OrderBy(v => v.DateValute).ToList();
+                var stats = CalculateStatistics(valutesSortedAscending);
+
+                if (stats != null)
+                {
+                    var maxDateStr = stats.MaxDate.ToString("dd MMM", RuCulture);
+                    var minDateStr = stats.MinDate.ToString("dd MMM", RuCulture);
+
+                    var changeSign = stats.AbsoluteChange >= 0 ? "+" : "";
+                    var changeStr = $"{changeSign}{stats.AbsoluteChange:0.00}";
+                    var percentStr = $"{changeSign}{stats.PercentChange:0.00}%";
+
+                    sb.AppendLine();
+                    sb.AppendLine($" Макс: {stats.MaxValue:0.00} ({maxDateStr})");
+                    sb.AppendLine($" Мин:  {stats.MinValue:0.00} ({minDateStr})");
+                    sb.AppendLine($" Изм:  {changeStr} ({percentStr}) за {stats.DaysCount} дн.");
+                }
+            }
+
             return sb.ToString();
         }
 
@@ -135,6 +158,101 @@ namespace ExchangeRatesBot.App.Services
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Рассчитывает статистику по списку курсов валюты за период.
+        /// Принимает уже дедуплицированный список Valute (отсортированный от старых к новым).
+        /// </summary>
+        private ValuteStatistics CalculateStatistics(List<Valute> valutes)
+        {
+            if (valutes == null || valutes.Count == 0)
+                return null;
+
+            var stats = new ValuteStatistics
+            {
+                CharCode = valutes[0].CharCode,
+                Name = valutes[0].Name
+            };
+
+            // Находим элемент с максимальным значением
+            var maxItem = valutes.OrderByDescending(v => v.Value).First();
+            stats.MaxValue = maxItem.Value;
+            stats.MaxDate = maxItem.DateValute;
+
+            // Находим элемент с минимальным значением
+            var minItem = valutes.OrderBy(v => v.Value).First();
+            stats.MinValue = minItem.Value;
+            stats.MinDate = minItem.DateValute;
+
+            // Абсолютное изменение за период (последний - первый)
+            var firstValue = valutes.First().Value;  // самый старый курс
+            var lastValue = valutes.Last().Value;    // самый свежий курс
+            stats.AbsoluteChange = lastValue - firstValue;
+
+            // Процентное изменение
+            stats.PercentChange = firstValue != 0
+                ? (lastValue - firstValue) / firstValue * 100.0
+                : 0;
+
+            // Текущий курс (последнее значение)
+            stats.CurrentValue = valutes.Last().Value;
+
+            // Количество дней в выборке
+            stats.DaysCount = valutes.Count;
+
+            return stats;
+        }
+
+        /// <summary>
+        /// Формирует компактную сводку курсов с недельной динамикой для рассылки.
+        /// </summary>
+        public async Task<string> GetValuteSummaryMessage(
+            string[] charCodesCollection, CancellationToken cancel)
+        {
+            var dateHeader = DateTime.Now.ToString("d MMMM", RuCulture);
+            var result = $"*Курсы ЦБ РФ* {dateHeader}\n\r\n\r";
+
+            foreach (var charCode in charCodesCollection)
+            {
+                var valutesRoot = await _processingService.RequestProcessing(8, charCode, cancel);
+                if (valutesRoot == null) continue;
+
+                var v = valutesRoot.GetValuteModels
+                    .Select(item => new Valute
+                    {
+                        CharCode = item.CharCode,
+                        DateValute = item.DateValute,
+                        Name = item.Name,
+                        Value = item.Value
+                    })
+                    .GroupBy(e => e.DateValute)
+                    .Select(g => g.First())
+                    .OrderBy(e => e.DateValute)
+                    .ToList();
+
+                if (v.Count < 2)
+                {
+                    result += $"{charCode}  {v.FirstOrDefault()?.Value:0.00}  нет данных\n\r";
+                    continue;
+                }
+
+                var stats = CalculateStatistics(v);
+                string changeStr;
+                if (Math.Abs(stats.AbsoluteChange) < 0.005)
+                {
+                    changeStr = "без изм.";
+                }
+                else
+                {
+                    var sign = stats.AbsoluteChange >= 0 ? "+" : "";
+                    changeStr = $"{sign}{stats.AbsoluteChange:0.00} за неделю";
+                }
+
+                result += $"{stats.CharCode}  {stats.CurrentValue:0.00}  {changeStr}\n\r";
+            }
+
+            return result;
         }
     }
 }

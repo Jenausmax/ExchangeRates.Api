@@ -22,5 +22,10 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// <param name="cancel"></param>
         /// <returns></returns>
         Task<string> GetValuteMessage(int day, string[] charCodesCollection, CancellationToken cancel);
+
+        /// <summary>
+        /// Формирует компактную сводку курсов с недельной динамикой для рассылки.
+        /// </summary>
+        Task<string> GetValuteSummaryMessage(string[] charCodesCollection, CancellationToken cancel);
     }
 }
