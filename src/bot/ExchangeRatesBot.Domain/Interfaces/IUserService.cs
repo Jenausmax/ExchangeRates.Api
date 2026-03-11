@@ -18,5 +18,15 @@ namespace ExchangeRatesBot.Domain.Interfaces
         Task<bool> SetUser(long chatId, User user = default, CancellationToken cancel = default);
         Task<bool> Create(User user, CancellationToken cancel);
         Task<bool> SubscribeUpdate(long chatId, bool subscribe, CancellationToken cancel);
+
+        /// <summary>
+        /// Обновить выбранные валюты пользователя
+        /// </summary>
+        Task<bool> UpdateCurrencies(long chatId, string currencies, CancellationToken cancel);
+
+        /// <summary>
+        /// Получить выбранные валюты пользователя (синхронный, работает с CurrentUser)
+        /// </summary>
+        string[] GetUserCurrencies(long chatId);
     }
 }

@@ -9,6 +9,34 @@
         public static string Error { get; } = "Не правильный запрос. Попробуйте воспользоваться меню снизу.";
         public static string[] Valutes { get; } = new string[] { "USD", "EUR", "GBP", "JPY", "CNY" };
 
+        // --- Новые константы для выбора валют ---
+
+        /// <summary>
+        /// Список валют для выбора (топ-10 популярных)
+        /// </summary>
+        public static string[] AvailableCurrencies { get; } = new string[]
+            { "USD", "EUR", "GBP", "JPY", "CNY", "CHF", "CAD", "AUD", "TRY", "BYN" };
+
+        /// <summary>
+        /// Дефолтный набор (текущее поведение)
+        /// </summary>
+        public static string DefaultCurrencies { get; } = "USD,EUR,GBP,JPY,CNY";
+
+        /// <summary>
+        /// Заголовок для клавиатуры выбора валют
+        /// </summary>
+        public static string CurrenciesHeader { get; } = "Выберите валюты для отслеживания:";
+
+        /// <summary>
+        /// Сообщение об успешном сохранении валют
+        /// </summary>
+        public static string CurrenciesSaved { get; } = "*Настройки сохранены!* Выбранные валюты: ";
+
+        /// <summary>
+        /// Предупреждение при попытке сохранить пустой набор
+        /// </summary>
+        public static string CurrenciesEmpty { get; } = "Выберите хотя бы одну валюту.";
+
         // --- Новые константы для ReplyKeyboard ---
 
         /// <summary>
@@ -19,6 +47,7 @@
         public static string BtnValuteSevenDays { get; } = "За 7 дней";
         public static string BtnSubscribe { get; } = "Подписка";
         public static string BtnHelp { get; } = "Помощь";
+        public static string BtnCurrencies { get; } = "Валюты";
 
         /// <summary>
         /// Текст ответа на команду /help.
@@ -27,8 +56,9 @@
             "*Доступные команды:*\n\r" +
             "Курс сегодня -- курсы валют ЦБ РФ на сегодня\n\r" +
             "За 7 дней -- изменения курсов за последние 7 дней\n\r" +
+            "Валюты -- выбор валют для отслеживания\n\r" +
             "Подписка -- подписаться/отписаться от рассылки курсов\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
-            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /subscribe, /help";
+            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /currencies, /subscribe, /help";
     }
 }

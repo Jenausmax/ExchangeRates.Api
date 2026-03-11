@@ -1,4 +1,5 @@
-﻿using ExchangeRatesBot.DB.Models;
+﻿using ExchangeRatesBot.App.Phrases;
+using ExchangeRatesBot.DB.Models;
 using ExchangeRatesBot.Domain.Interfaces;
 using ExchangeRatesBot.Domain.Models;
 using System;
@@ -31,6 +32,7 @@ namespace ExchangeRatesBot.App.Services
                 CurrentUser.Id = userGetCollection.Id;
                 CurrentUser.ChatId = userGetCollection.ChatId;
                 CurrentUser.NickName = userGetCollection.NickName;
+                CurrentUser.Currencies = userGetCollection.Currencies;  // NEW: загрузить Currencies
                 await _userDb.Update(userGetCollection, cancel);
                 return true;
             }
@@ -53,6 +55,7 @@ namespace ExchangeRatesBot.App.Services
             userDb.LastName = user.LastName;
             userDb.NickName = user.NickName;
             userDb.Subscribe = user.Subscribe;
+            userDb.Currencies = user.Currencies;  // NEW: будет null для новых пользователей
 
             return await _userDb.Create(userDb, cancel);
         }
@@ -70,6 +73,35 @@ namespace ExchangeRatesBot.App.Services
             userDb.Subscribe = subscribe;
             await _userDb.Update(userDb, cancel);
             return true;
+        }
+
+        /// <summary>
+        /// Обновить выбранные валюты пользователя
+        /// </summary>
+        public async Task<bool> UpdateCurrencies(long chatId, string currencies, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.Currencies = currencies;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Получить выбранные валюты пользователя (синхронный, работает с CurrentUser)
+        /// </summary>
+        public string[] GetUserCurrencies(long chatId)
+        {
+            if (CurrentUser != null && CurrentUser.ChatId == chatId && CurrentUser.Currencies != null)
+            {
+                return CurrentUser.Currencies.Split(',');
+            }
+            return BotPhrases.Valutes;  // дефолтный набор
         }
     }
 }

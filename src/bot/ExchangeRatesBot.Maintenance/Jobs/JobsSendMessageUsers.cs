@@ -64,11 +64,17 @@ namespace ExchangeRatesBot.Maintenance.Jobs
 
             var users = usersCollectionDb.Where(u => u.Subscribe == true).ToArray();
 
-            var message = await messageValute.GetValuteSummaryMessage(BotPhrases.Valutes, cancel);
+            if (!users.Any()) return;
 
-            if (users.Any())
+            // Группируем пользователей по набору валют для минимизации запросов к API
+            var groups = users.GroupBy(u => u.Currencies ?? BotPhrases.DefaultCurrencies);
+
+            foreach (var group in groups)
             {
-                foreach (var userDb in users)
+                var currencies = group.Key.Split(',');
+                var message = await messageValute.GetValuteSummaryMessage(currencies, cancel);
+
+                foreach (var userDb in group)
                 {
                     await botService.Client.SendTextMessageAsync(
                         chatId: userDb.ChatId,

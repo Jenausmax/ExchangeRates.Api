@@ -13,5 +13,6 @@ namespace ExchangeRatesBot.Domain.Models
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public bool Subscribe { get; set; }
+        public string Currencies { get; set; }  // NEW
     }
 }
