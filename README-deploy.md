@@ -2,20 +2,27 @@
 
 ## Быстрый старт
 
-### Однострочный запуск (рекомендуется)
+### Рекомендуемый способ (Linux/macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Jenausmax/ExchangeRates.Api/main/deploy.sh | bash
-```
+# Скачайте скрипт
+curl -fsSL https://raw.githubusercontent.com/Jenausmax/ExchangeRates.Api/main/deploy.sh -o deploy.sh
 
-### Локальный запуск
-
-```bash
-# Установите права на выполнение
+# Сделайте скрипт исполняемым
 chmod +x deploy.sh
 
 # Запустите скрипт
 ./deploy.sh
+```
+
+### Для Windows (Git Bash)
+
+```bash
+# Скачайте скрипт
+curl -fsSL https://raw.githubusercontent.com/Jenausmax/ExchangeRates.Api/main/deploy.sh -o deploy.sh
+
+# Запустите скрипт
+bash deploy.sh
 ```
 
 ## Требования
