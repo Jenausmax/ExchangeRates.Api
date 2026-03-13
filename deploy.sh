@@ -414,11 +414,23 @@ clone_or_update_repo() {
         print_info "Клонирование репозитория (${BRANCH})..."
 
         if [ -n "$(ls -A)" ]; then
-            print_warning "Папка не пуста"
-            if ! prompt_yes_no "Клонировать репозиторий в текущую папку?"; then
+            print_warning "Текущая папка не пуста"
+            echo ""
+            print_info "Создастся отдельная папка '${PROJECT_NAME}' для проекта"
+            if ! prompt_yes_no "Продолжить?"; then
                 print_error "Операция отменена"
                 return 1
             fi
+
+            # Создаем папку проекта
+            print_info "Создание папки '${PROJECT_NAME}'..."
+            if ! mkdir "$PROJECT_NAME"; then
+                print_error "Не удалось создать папку '${PROJECT_NAME}'"
+                return 1
+            fi
+
+            # Переходим в папку проекта
+            cd "$PROJECT_NAME"
         fi
 
         if ! git clone -b "$BRANCH" "$GITHUB_REPO" .; then
