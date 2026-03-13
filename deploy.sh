@@ -258,7 +258,23 @@ prompt_bot_token() {
 
     while [ $attempts -lt $max_attempts ]; do
         echo -n "  Введите токен бота: "
-        read -s bot_token
+
+        # Пытаемся использовать скрытый ввод, если терминал поддерживает
+        if [ -t 0 ]; then
+            # Пробуем прочитать токен с /dev/tty для корректной работы в разных терминалах
+            read bot_token < /dev/tty
+        else
+            read bot_token
+        fi
+
+        # Проверяем, что токен не пустой
+        if [ -z "$bot_token" ]; then
+            echo ""
+            print_warning "Токен не может быть пустым. Попробуйте еще раз."
+            attempts=$((attempts + 1))
+            continue
+        fi
+
         echo ""
 
         if validate_bot_token "$bot_token"; then
@@ -414,23 +430,85 @@ clone_or_update_repo() {
         print_info "Клонирование репозитория (${BRANCH})..."
 
         if [ -n "$(ls -A)" ]; then
-            print_warning "Текущая папка не пуста"
-            echo ""
-            print_info "Создастся отдельная папка '${PROJECT_NAME}' для проекта"
-            if ! prompt_yes_no "Продолжить?"; then
-                print_error "Операция отменена"
-                return 1
-            fi
+            # Проверяем, существует ли уже папка проекта
+            if [ -d "$PROJECT_NAME" ]; then
+                print_warning "Текущая папка не пуста"
+                print_warning "Папка '${PROJECT_NAME}' уже существует"
 
-            # Создаем папку проекта
-            print_info "Создание папки '${PROJECT_NAME}'..."
-            if ! mkdir "$PROJECT_NAME"; then
-                print_error "Не удалось создать папку '${PROJECT_NAME}'"
-                return 1
-            fi
+                echo ""
+                print_info "Что вы хотите сделать?"
+                echo "    1) Использовать существующую папку '${PROJECT_NAME}'"
+                echo "    2) Отменить операцию"
+                echo ""
 
-            # Переходим в папку проекта
-            cd "$PROJECT_NAME"
+                while true; do
+                    read -p "  Ваш выбор [2]: " use_existing
+                    use_existing=${use_existing:-2}
+
+                    case $use_existing in
+                        1)
+                            # Переходим в существующую папку
+                            print_info "Переход в папку '${PROJECT_NAME}'..."
+                            cd "$PROJECT_NAME"
+
+                            # Проверяем, что это действительно проект
+                            if ! check_existing_project; then
+                                print_error "Папка '${PROJECT_NAME}' не содержит проект ExchangeRates.Api"
+                                return 1
+                            fi
+
+                            # Считываем существующий токен
+                            if [ -f "$ENV_FILE" ]; then
+                                BOT_TOKEN=$(grep "^BOT_TOKEN=" "$ENV_FILE" | cut -d'=' -f2)
+                                if [ -z "$BOT_TOKEN" ] || [ "$BOT_TOKEN" = "YOUR_BOT_TOKEN_HERE" ]; then
+                                    BOT_TOKEN=""
+                                fi
+                            fi
+
+                            operation="обновление"
+                            # Обновляем существующий проект
+                            print_info "Обновление ветки '${BRANCH}'..."
+                            if ! git checkout "$BRANCH" 2>/dev/null; then
+                                print_error "Ветка '${BRANCH}' не существует"
+                                return 1
+                            fi
+
+                            if ! git pull origin "$BRANCH"; then
+                                print_error "Не удалось обновить репозиторий"
+                                return 1
+                            fi
+
+                            return 0
+                            ;;
+                        2|"")
+                            print_error "Операция отменена"
+                            return 1
+                            ;;
+                        *)
+                            print_warning "Пожалуйста, введите 1 или 2"
+                            ;;
+                    esac
+                done
+            else
+                # Папка не существует, спрашиваем создать ли её
+                print_warning "Текущая папка не пуста"
+                echo ""
+                print_info "Создастся отдельная папка '${PROJECT_NAME}' для проекта"
+                if ! prompt_yes_no "Продолжить?"; then
+                    print_error "Операция отменена"
+                    return 1
+                fi
+
+                # Создаем папку проекта
+                print_info "Создание папки '${PROJECT_NAME}'..."
+                if ! mkdir "$PROJECT_NAME"; then
+                    print_error "Не удалось создать папку '${PROJECT_NAME}'"
+                    return 1
+                fi
+
+                # Переходим в папку проекта
+                cd "$PROJECT_NAME"
+            fi
         fi
 
         if ! git clone -b "$BRANCH" "$GITHUB_REPO" .; then
