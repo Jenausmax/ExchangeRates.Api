@@ -60,7 +60,35 @@
             "Статистика -- детальная статистика за период (3-30 дней)\n\r" +
             "Валюты -- выбор валют для отслеживания\n\r" +
             "Подписка -- подписаться/отписаться от рассылки курсов\n\r" +
+            "Новости -- новостной дайджест и подписка на новости\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
-            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /help";
+            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /help";
+
+        // --- Новостной дайджест ---
+
+        /// <summary>
+        /// Текст кнопки "Новости" в ReplyKeyboard
+        /// </summary>
+        public static string BtnNews { get; } = "Новости";
+
+        /// <summary>
+        /// Подтверждение подписки на новостной дайджест
+        /// </summary>
+        public static string NewsSubscribeTrue { get; } = "*Подписка на новости оформлена!* Вы будете получать новостной дайджест.";
+
+        /// <summary>
+        /// Подтверждение отписки от новостного дайджеста
+        /// </summary>
+        public static string NewsSubscribeFalse { get; } = "*Подписка на новости отменена.*";
+
+        /// <summary>
+        /// Сообщение при отсутствии новых новостей
+        /// </summary>
+        public static string NewsEmpty { get; } = "Новых новостей пока нет. Попробуйте позже.";
+
+        /// <summary>
+        /// Заголовок меню новостей
+        /// </summary>
+        public static string NewsHeader { get; } = "Выберите действие:";
     }
 }

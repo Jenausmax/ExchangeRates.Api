@@ -10,5 +10,6 @@ namespace ExchangeRatesBot.DB.Models
         public string LastName { get; set; }
         public bool Subscribe { get; set; }
         public string Currencies { get; set; }  // NEW: "USD,EUR,GBP" или null для дефолта
+        public bool NewsSubscribe { get; set; }
     }
 }

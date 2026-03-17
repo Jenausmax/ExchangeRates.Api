@@ -35,6 +35,7 @@ namespace ExchangeRatesBot
             services.AddScoped<IApiClient, ApiClientService>();
             services.AddScoped<IMessageValute, MessageValuteService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<INewsApiClient, NewsApiClientService>();
             services.AddScoped(typeof(IBaseRepositoryDb<>), (typeof(RepositoryDb<>)));
 
             services.Configure<BotConfig>(Config.GetSection("BotConfig"));
@@ -46,6 +47,12 @@ namespace ExchangeRatesBot
             if (botConfig.UsePolling)
             {
                 services.AddHostedService<PollingBackgroundService>();
+            }
+
+            // Условная регистрация новостного дайджеста
+            if (botConfig.NewsEnabled)
+            {
+                services.AddHostedService<JobsSendNewsDigest>();
             }
 
             services.AddControllers().AddNewtonsoftJson();

@@ -33,6 +33,7 @@ services:
     container_name: exchangerates-bot
     depends_on:
       - exchangerates-api
+      - exchangerates-news
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
@@ -49,10 +50,40 @@ services:
       - BotConfig__TimeTwo=${BOT_TIME_TWO:-15:32}
       # ОТДЕЛЬНАЯ БД бота (не путать с БД API)
       - ConnectionStrings__SqliteConnection=Data Source=/app/data/Data.db;foreign keys=false;
+      # Новостной сервис
+      - BotConfig__NewsServiceUrl=http://exchangerates-news:80/
+      - BotConfig__NewsEnabled=${NEWS_ENABLED:-false}
+      - BotConfig__NewsTime=${NEWS_TIME:-09:00}
     volumes:
       # ОТДЕЛЬНЫЕ volumes от API
       - ./bot-data:/app/data
       - ./bot-logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - exchangerates-network
+
+  exchangerates-news:
+    build:
+      context: ./src
+      dockerfile: newsservice/NewsService/Dockerfile
+    container_name: exchangerates-news
+    ports:
+      - "5002:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__NewsDb=Data Source=/app/data/News.db;foreign keys=false;
+      - NewsConfig__Enabled=true
+      - NewsConfig__FetchIntervalMinutes=60
+      - NewsConfig__SendTime=09:00
+      - NewsConfig__MaxNewsPerDigest=5
+      # LLM провайдер: "" (отключен), "polza", "ollama"
+      - LlmConfig__Provider=${LLM_PROVIDER:-}
+      - LlmConfig__PolzaApiKey=${POLZA_API_KEY:-}
+      - LlmConfig__OllamaUrl=${OLLAMA_URL:-http://localhost:11434}
+    volumes:
+      - ./news-data:/app/data
+      - ./news-logs:/app/logs
     restart: unless-stopped
     networks:
       - exchangerates-network

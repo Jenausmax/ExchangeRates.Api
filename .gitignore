@@ -369,6 +369,15 @@ data/
 logs/
 bot-data/
 bot-logs/
+news-data/
+news-logs/
+
+# SQLite databases (runtime data)
+*.db-shm
+*.db-wal
+News.db
+Data.db
+log.db
 
 # Environment variables (contains secrets)
 .env

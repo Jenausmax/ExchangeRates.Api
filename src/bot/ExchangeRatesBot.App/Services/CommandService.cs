@@ -17,7 +17,8 @@ namespace ExchangeRatesBot.App.Services
         private readonly IUpdateService _updateService;
         private readonly IMessageValute _valuteService;
         private readonly IUserService _userControl;
-        private readonly IBotService _botService;  // NEW
+        private readonly IBotService _botService;
+        private readonly INewsApiClient _newsClient;
 
         // Временное состояние выбора валют для каждого пользователя (chatId -> HashSet<currencies>)
         private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingSelections = new();
@@ -27,12 +28,14 @@ namespace ExchangeRatesBot.App.Services
             IProcessingService processingService,
             IMessageValute valuteService,
             IUserService userControl,
-            IBotService botService)  // NEW
+            IBotService botService,
+            INewsApiClient newsClient)
         {
             _updateService = updateService;
             _valuteService = valuteService;
             _userControl = userControl;
-            _botService = botService;  // NEW
+            _botService = botService;
+            _newsClient = newsClient;
         }
 
         //public async Task SetUpdateBot(Update update)
@@ -138,6 +141,37 @@ namespace ExchangeRatesBot.App.Services
                         BotPhrases.SubscribeFalse,
                         default);
                     break;
+
+                case "news_subscribe":
+                    await _userControl.NewsSubscribeUpdate(_userControl.CurrentUser.ChatId, true, CancellationToken.None);
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.NewsSubscribeTrue,
+                        default);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
+                case "news_unsubscribe":
+                    await _userControl.NewsSubscribeUpdate(_userControl.CurrentUser.ChatId, false, CancellationToken.None);
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.NewsSubscribeFalse,
+                        default);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
+                case "news_latest":
+                    var digest = await _newsClient.GetLatestDigestAsync(5, CancellationToken.None);
+                    if (string.IsNullOrWhiteSpace(digest?.Message))
+                    {
+                        await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsEmpty, default);
+                    }
+                    else
+                    {
+                        await _updateService.EchoTextMessageAsync(update, digest.Message, default);
+                    }
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
             }
         }
 
@@ -219,6 +253,15 @@ namespace ExchangeRatesBot.App.Services
                         new InlineKeyboardMarkup(PeriodSelectionKeyboard()));
                     break;
 
+                // --- Команда /news и кнопка "Новости" ---
+                case "/news":
+                case var txt when txt == BotPhrases.BtnNews:
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.NewsHeader,
+                        new InlineKeyboardMarkup(NewsMenu()));
+                    break;
+
                 default:
                     await _updateService.EchoTextMessageAsync(
                         update,
@@ -245,7 +288,8 @@ namespace ExchangeRatesBot.App.Services
             return new ReplyKeyboardMarkup(new[]
             {
                 new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays), new KeyboardButton(BotPhrases.BtnStatistics) },
-                new[] { new KeyboardButton(BotPhrases.BtnCurrencies),     new KeyboardButton(BotPhrases.BtnSubscribe),     new KeyboardButton(BotPhrases.BtnHelp) }
+                new[] { new KeyboardButton(BotPhrases.BtnCurrencies),     new KeyboardButton(BotPhrases.BtnSubscribe),     new KeyboardButton(BotPhrases.BtnHelp) },
+                new[] { new KeyboardButton(BotPhrases.BtnNews) }
             })
             {
                 ResizeKeyboard = true
@@ -357,6 +401,25 @@ namespace ExchangeRatesBot.App.Services
                 {
                     InlineKeyboardButton.WithCallbackData("21 день", "period_21"),
                     InlineKeyboardButton.WithCallbackData("30 дней", "period_30")
+                }
+            };
+        }
+
+        /// <summary>
+        /// Генерация inline-клавиатуры меню новостного дайджеста.
+        /// </summary>
+        private static List<List<InlineKeyboardButton>> NewsMenu()
+        {
+            return new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("Последние новости", "news_latest")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("Подписаться", "news_subscribe"),
+                    InlineKeyboardButton.WithCallbackData("Отписаться", "news_unsubscribe")
                 }
             };
         }

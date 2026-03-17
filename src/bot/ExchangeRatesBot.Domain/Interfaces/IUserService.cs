@@ -28,5 +28,10 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Получить выбранные валюты пользователя (синхронный, работает с CurrentUser)
         /// </summary>
         string[] GetUserCurrencies(long chatId);
+
+        /// <summary>
+        /// Обновить подписку пользователя на новостной дайджест
+        /// </summary>
+        Task<bool> NewsSubscribeUpdate(long chatId, bool subscribe, CancellationToken cancel);
     }
 }

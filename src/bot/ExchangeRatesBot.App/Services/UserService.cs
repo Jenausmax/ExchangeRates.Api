@@ -103,5 +103,22 @@ namespace ExchangeRatesBot.App.Services
             }
             return BotPhrases.Valutes;  // дефолтный набор
         }
+
+        /// <summary>
+        /// Обновить подписку пользователя на новостной дайджест
+        /// </summary>
+        public async Task<bool> NewsSubscribeUpdate(long chatId, bool subscribe, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.NewsSubscribe = subscribe;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
     }
 }
