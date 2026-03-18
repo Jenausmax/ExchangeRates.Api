@@ -8,40 +8,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Обзор проекта
 
-Монорепозиторий содержит две связанные системы:
+Монорепозиторий содержит три микросервиса:
 
-1. **ExchangeRates.Api** - ASP.NET Core 5.0 API для получения и хранения курсов валют от ЦБ РФ
-2. **ExchangeRatesBot** - Telegram бот для предоставления курсов валют пользователям
+1. **ExchangeRates.Api** — REST API для получения и хранения курсов валют от ЦБ РФ
+2. **ExchangeRatesBot** — Telegram-бот для предоставления курсов валют пользователям
+3. **NewsService** — микросервис новостного дайджеста (RSS-парсинг ЦБ РФ, LLM-суммаризация)
 
-Обе системы используют SQLite для хранения данных (каждая свою БД) и развертываются через docker-compose как взаимосвязанные микросервисы.
+Все сервисы — .NET 10.0 / ASP.NET Core, используют SQLite (каждый свою БД) и развертываются через docker-compose (3 контейнера в общей сети).
 
 ## Команды для сборки и запуска
 
 ### Локальная разработка
 
 ```bash
-# Сборка решения (из корня репозитория)
+# Сборка решения (22 проекта)
 dotnet build src/ExchangeRates.Api.sln
 
 # Запуск API
 dotnet run --project src/ExchangeRates.Api/ExchangeRates.Api.csproj
 
-# Запуск Telegram бота
+# Запуск Telegram-бота
 dotnet run --project src/bot/ExchangeRatesBot/ExchangeRatesBot.csproj
 
-# Entity Framework миграции для API
-dotnet ef database update --project src/ExchangeRates.Migrations --startup-project src/ExchangeRates.Api
-dotnet ef migrations add <MigrationName> --project src/ExchangeRates.Migrations --startup-project src/ExchangeRates.Api
+# Запуск NewsService
+dotnet run --project src/newsservice/NewsService/NewsService.csproj
 
-# Entity Framework миграции для бота
+# EF миграции для API
+dotnet ef database update --project src/ExchangeRates.Migrations --startup-project src/ExchangeRates.Api
+dotnet ef migrations add <Name> --project src/ExchangeRates.Migrations --startup-project src/ExchangeRates.Api
+
+# EF миграции для бота
 dotnet ef database update --project src/bot/ExchangeRatesBot.Migrations --startup-project src/bot/ExchangeRatesBot
-dotnet ef migrations add <MigrationName> --project src/bot/ExchangeRatesBot.Migrations --startup-project src/bot/ExchangeRatesBot
+dotnet ef migrations add <Name> --project src/bot/ExchangeRatesBot.Migrations --startup-project src/bot/ExchangeRatesBot
+
+# EF миграции для NewsService
+dotnet ef database update --project src/newsservice/NewsService.Migrations --startup-project src/newsservice/NewsService
+dotnet ef migrations add <Name> --project src/newsservice/NewsService.Migrations --startup-project src/newsservice/NewsService
 ```
 
 ### Docker (рекомендуется)
 
 ```bash
-# Запуск обоих сервисов (из корня проекта)
+# Автоматическое развертывание
+chmod +x deploy.sh && ./deploy.sh
+
+# Ручной запуск всех 3 сервисов
 docker-compose up -d
 
 # Остановка
@@ -51,191 +62,201 @@ docker-compose down
 docker-compose logs -f
 docker-compose logs -f exchangerates-api
 docker-compose logs -f exchangerates-bot
+docker-compose logs -f exchangerates-news
 
 # Пересборка и перезапуск
 docker-compose up -d --build
-
-# Запуск только API
-docker-compose up -d exchangerates-api
-
-# Запуск только бота (требует запущенный API)
-docker-compose up -d exchangerates-bot
 ```
 
-**ВАЖНО**: Создайте файл `.env` в корне проекта с секретами:
+**ВАЖНО**: Создайте файл `.env` в корне проекта (шаблон: `.env.example`):
 ```bash
 BOT_TOKEN=your_telegram_bot_token
 BOT_USE_POLLING=true
 BOT_WEBHOOK=
 BOT_TIME_ONE=14:05
 BOT_TIME_TWO=15:32
+NEWS_ENABLED=false
+NEWS_TIME=09:00
+LLM_PROVIDER=
+POLZA_API_KEY=
+OLLAMA_URL=http://localhost:11434
 ```
 
 ## Процесс планирования фич
 
 При планировании новых фич (features) следуйте этому процессу:
 
-1. **Создание плана**: При входе в режим планирования (EnterPlanMode) создавайте файл плана в папке `doc/feature/` с именем `ГГГГММДД-название-фичи.md` (например, `20260206-интеграция-telegram-бота-в-docker-compose.md`)
+1. **Создание плана**: При входе в режим планирования (EnterPlanMode) создавайте файл плана в папке `doc/feature/` с именем `ГГГГММДД-название-фичи.md`
 
 2. **Формат файла плана**:
-   - В самом начале файла (первая строка) должен быть статус реализации в формате markdown checkbox:
-     - `- [ ] Не реализовано` - фича еще не реализована
-     - `- [x] Реализовано` - фича полностью реализована
-   - После статуса следует полное описание плана реализации
+   - Первая строка — статус: `- [ ] Не реализовано` или `- [x] Реализовано`
+   - Далее полное описание плана реализации
 
-3. **Обновление статуса**: После завершения реализации фичи обновите статус в файле плана с `- [ ] Не реализовано` на `- [x] Реализовано`
+3. **Обновление статуса**: После реализации — `- [x] Реализовано`
 
-4. **Структура папки doc**: Вся документация проекта хранится в папке `doc/` в корне репозитория. Планы фич находятся в `doc/feature/` для удобного отслеживания и истории разработки
+4. **Документация**: `doc/` — документация, `doc/feature/` — планы фич, `doc/architecture.md` — архитектура
 
 ## Архитектура решения
 
-Решение использует чистую/слоистую архитектуру с разделением на два независимых приложения.
+Решение использует Clean Architecture с разделением на три независимых микросервиса. Подробная документация с Mermaid-диаграммами: [doc/architecture.md](doc/architecture.md)
 
-### ExchangeRates.Api (Сервис курсов валют)
+### ExchangeRates.Api (Сервис курсов валют) — 8 проектов
 
-#### Слой ядра (Core Layer)
-- **ExchangeRates.Core.Domain**: Доменные модели (`Root`, `Valute`, `ParseModel`) и интерфейсы (`IApiClient`, `IProcessingService`, `ISaveService`, `IGetValute`, `IRepositoryBase<T>`)
-- **ExchangeRates.Core.App**: Сервисы приложения
-  - `ApiClientService`: HTTP-клиент для API ЦБ РФ (https://www.cbr-xml-daily.ru/daily_json.js)
-  - `ProcessingService`: Получение и десериализация JSON
-  - `SaveService`: Маппинг в модели БД и сохранение (ручной маппинг 34 валют для типобезопасности)
-  - `GetValuteService`: Получение исторических курсов из БД
+```
+src/
+  ExchangeRates.Api/                    # Web API (ValuteController)
+  ExchangeRates.Core.Domain/            # Модели (Root, Valute), интерфейсы
+  ExchangeRates.Core.App/               # ApiClientService, ProcessingService, SaveService, GetValuteService
+  ExchangeRates.Infrastructure.DB/      # EF Core контекст DataDb, ValuteModelDb
+  ExchangeRates.Infrastructure.SQLite/  # Generic-репозиторий RepositoryDbSQLite<T>
+  ExchangeRates.Configuration/          # ClientConfig
+  ExchangeRates.Maintenance/            # BackgroundTaskAbstract<T>, JobsCreateValute, JobsCreateValuteToHour
+  ExchangeRates.Migrations/             # EF Core миграции
+```
 
-#### Инфраструктурный слой
-- **ExchangeRates.Infrastructure.DB**: EF Core контекст `DataDb` и модели БД (`ValuteModelDb`)
-- **ExchangeRates.Infrastructure.SQLite**: Generic-репозиторий `RepositoryDbSQLite<T>`
-- **ExchangeRates.Migrations**: EF Core миграции
+**API эндпоинт**: `POST /?charcode={код}&day={дни}` — запрос курсов по коду валюты
 
-#### Слой представления
-- **ExchangeRates.Api**: Web API с `ValuteController` (POST эндпоинт для запроса курсов по коду валюты и диапазону дней)
+**Поток данных**: Таймер → ProcessingService → HTTP GET cbr-xml-daily.ru → JSON → SaveService → SQLite
 
-#### Фоновые задачи
-- **ExchangeRates.Maintenance**: Инфраструктура фоновых задач
-  - `BackgroundTaskAbstract<T>`: Базовый класс для периодических задач
-  - `JobsCreateValute`: Запланированная задача (раз в день в `TimeUpdateJobs`)
-  - `JobsCreateValuteToHour`: Периодическая задача (каждые `PeriodMinute` минут) с предотвращением дубликатов
+### ExchangeRatesBot (Telegram-бот) — 7 проектов
 
-**Поток данных**:
-1. Фоновая задача срабатывает → 2. `ProcessingService.RequestProcessing()` → 3. Десериализация JSON → 4. `SaveService.SaveSet()` или `SaveSetNoDublicate()` → 5. `RepositoryDbSQLite<T>` сохраняет в SQLite → 6. API эндпоинт возвращает данные
+```
+src/bot/
+  ExchangeRatesBot/                    # Web Host, UpdateController (webhook)
+  ExchangeRatesBot.App/               # BotService, CommandService, UpdateService, MessageValuteService, UserService, NewsApiClientService, BotPhrases
+  ExchangeRatesBot.Domain/            # Интерфейсы (IBotService, ICommandBot, IUserService, INewsApiClient), модели
+  ExchangeRatesBot.DB/                # EF Core DataDb, UserDb (ChatId, Subscribe, NewsSubscribe, Currencies), RepositoryDb<T>
+  ExchangeRatesBot.Configuration/     # BotConfig (BotToken, UsePolling, Webhook, UrlRequest, NewsServiceUrl, NewsEnabled, NewsTime)
+  ExchangeRatesBot.Maintenance/       # JobsSendMessageUsers, JobsSendNewsDigest, PollingBackgroundService
+  ExchangeRatesBot.Migrations/        # EF Core миграции
+```
 
-### ExchangeRatesBot (Telegram бот)
+**Команды бота**: `/start`, `/help`, `/valuteoneday`, `/valutesevendays`, `/currencies`, `/subscribe`, `/unsubscribe`, `/news`
 
-#### Архитектура слоев
-- **ExchangeRatesBot.Domain**: Интерфейсы и доменные модели
-- **ExchangeRatesBot.App**: Сервисы приложения
-  - `BotService`: Singleton, управляет `TelegramBotClient` и режимами работы (webhook/polling)
-  - `UpdateService`: Обработка входящих Update от Telegram
-  - `CommandService`: Парсинг и выполнение команд (/start, /stop, /help, /курс)
-  - `MessageValuteService`: Получение данных курсов от ExchangeRates.Api
-  - `ApiClientService`: HTTP-клиент для обращения к ExchangeRates.Api
-  - `UserService`: Работа с пользователями (подписка/отписка)
-- **ExchangeRatesBot.DB**: EF Core контекст `DataDb` и модели БД
-- **ExchangeRatesBot.Migrations**: EF Core миграции
-- **ExchangeRatesBot.Maintenance**: Фоновые задачи
-  - `JobsSendMessageUsers`: Рассылка курсов подписанным пользователям (`TimeOne`, `TimeTwo`)
-  - `PollingBackgroundService`: Long polling для получения обновлений от Telegram (альтернатива webhook)
-- **ExchangeRatesBot**: ASP.NET Core хост с `UpdateController` для webhook
+**Reply-клавиатура**: 3 ряда — (Курс сегодня | За 7 дней), (Подписка | Помощь), (Новости)
 
-#### Режимы работы бота
+**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `news_subscribe`, `news_unsubscribe`, `news_latest`
 
-Бот поддерживает два режима (управляется через `BotConfig.UsePolling`):
+**Режимы работы** (через `BotConfig.UsePolling`):
+- **Polling** (true, рекомендуется для Docker): `PollingBackgroundService` → `GetUpdatesAsync` (long polling, 30s)
+- **Webhook** (false): Telegram POST → `UpdateController`
 
-**1. Webhook режим (UsePolling=false)**:
-- Telegram отправляет обновления на публичный HTTPS URL
-- Требуется настроенный `BotConfig.Webhook`
-- `BotService` вызывает `SetWebhookAsync()` при инициализации
-- `UpdateController` принимает POST запросы от Telegram
+### NewsService (Новостной дайджест) — 7 проектов
 
-**2. Polling режим (UsePolling=true, рекомендуется для Docker)**:
-- Бот сам опрашивает Telegram API через `GetUpdatesAsync`
-- Не требуется публичный домен
-- `BotService` вызывает `DeleteWebhookAsync()` при инициализации
-- `PollingBackgroundService` работает в бесконечном цикле с long polling (timeout=30 сек)
-- Offset management: `offset = update.Id + 1` после каждого обновления
+```
+src/newsservice/
+  NewsService/                         # Web Host, DigestController (3 эндпоинта)
+  NewsService.App/                     # RssFetcherService, NewsDeduplicationService, NewsDigestService, PolzaLlmService, OllamaLlmService, NoopLlmService, NewsNormalizationHelper
+  NewsService.Domain/                  # Модели (NewsTopicDb, NewsItemDb, RssNewsItem), DTO, интерфейсы
+  NewsService.DB/                      # EF Core NewsDataDb, NewsRepository
+  NewsService.Configuration/           # NewsConfig, LlmConfig
+  NewsService.Maintenance/             # NewsBackgroundTask<T>, JobsFetchNews (RSS каждые 60 мин)
+  NewsService.Migrations/              # EF Core миграции
+```
 
-**Важно**: `CommandService` универсален и переиспользуется для обоих режимов без изменений.
+**API эндпоинты**:
+- `GET /api/digest/latest?maxNews=10` — последний неотправленный дайджест
+- `POST /api/digest/mark-sent` — пометить темы как отправленные
+- `GET /api/digest/status` — статус сервиса
 
-#### Поток обработки команд:
-1. Update приходит (webhook POST или polling GetUpdatesAsync) → 2. `ICommandBot.SetCommandBot()` → 3. Парсинг команды → 4. Вызов соответствующего обработчика → 5. Отправка ответа через `BotService.Client`
+**LLM-провайдеры** (Strategy Pattern, через `LlmConfig.Provider`):
+- `polza` → PolzaLlmService (облачный)
+- `ollama` → OllamaLlmService (локальный)
+- пусто → NoopLlmService (graceful degradation)
+
+**Дедупликация**: SHA256 от нормализованного заголовка, уникальный индекс ContentHash
 
 ### Docker Compose архитектура
 
-Два сервиса в общей сети `exchangerates-network`:
+Три сервиса в общей сети `exchangerates-network`:
 
-- **exchangerates-api**: Порты 5000:80, 5001:443
-  - Volumes: `./data` (Data.db), `./logs`
-  - Auto-migration при старте (`dataDb.Database.Migrate()`)
+| Сервис | Контейнер | Порты | Volumes | Зависит от |
+|--------|-----------|-------|---------|------------|
+| API | exchangerates-api | 5000:80 | ./data, ./logs | — |
+| Bot | exchangerates-bot | — | ./bot-data, ./bot-logs | api, news |
+| News | exchangerates-news | 5002:80 | ./news-data, ./news-logs | — |
 
-- **exchangerates-bot**: Зависит от exchangerates-api
-  - Обращается к API по имени сервиса: `http://exchangerates-api:80/`
-  - Volumes: `./bot-data` (отдельная БД), `./bot-logs`
-  - Секреты через .env файл
-
-**КРИТИЧНО**: В Docker сети внутренние сервисы обращаются друг к другу по имени контейнера, а не localhost.
+**КРИТИЧНО**: В Docker сети сервисы обращаются друг к другу по имени контейнера:
+- Бот → API: `http://exchangerates-api:80/`
+- Бот → News: `http://exchangerates-news:80/`
 
 ## Конфигурация
 
 ### ExchangeRates.Api (appsettings.json)
 
-- **ClientConfig:SiteApi/SiteGet**: URL API ЦБ РФ
+- **ClientConfig:SiteApi/SiteGet**: URL API ЦБ РФ (`https://www.cbr-xml-daily.ru/`, `daily_json.js`)
 - **ClientConfig:PeriodMinute**: Интервал фоновых задач (по умолчанию 30)
 - **ClientConfig:TimeUpdateJobs**: Время ежедневной задачи (например, "08:40")
 - **ClientConfig:JobsValute/JobsValuteToHour**: Boolean флаги включения задач
 - **ConnectionStrings:DbData**: SQLite connection string
 
-### ExchangeRatesBot (appsettings.json + переменные окружения)
+### ExchangeRatesBot (appsettings.json + .env)
 
-- **BotConfig:BotToken**: Токен Telegram бота (СЕКРЕТ, использовать .env)
-- **BotConfig:UsePolling**: `true` для polling, `false` для webhook (по умолчанию false для обратной совместимости)
+- **BotConfig:BotToken**: Токен Telegram бота (СЕКРЕТ, через .env)
+- **BotConfig:UsePolling**: `true` для polling, `false` для webhook
 - **BotConfig:Webhook**: URL для webhook режима
-- **BotConfig:UrlRequest**: URL ExchangeRates.Api (в Docker: `http://exchangerates-api:80/`)
-- **BotConfig:TimeOne/TimeTwo**: Время рассылки курсов подписанным пользователям
-- **ConnectionStrings:SqliteConnection**: SQLite connection string для БД бота
+- **BotConfig:UrlRequest**: URL ExchangeRates.Api (Docker: `http://exchangerates-api:80/`)
+- **BotConfig:TimeOne/TimeTwo**: Время рассылки курсов
+- **BotConfig:NewsServiceUrl**: URL NewsService (Docker: `http://exchangerates-news:80/`)
+- **BotConfig:NewsEnabled**: Включить новостной дайджест (`true`/`false`)
+- **BotConfig:NewsTime**: Время рассылки новостей (например, "09:00")
+- **ConnectionStrings:SqliteConnection**: SQLite connection string
+
+### NewsService (appsettings.json + .env)
+
+- **NewsConfig:Enabled**: Включить сбор RSS
+- **NewsConfig:FetchIntervalMinutes**: Интервал парсинга RSS (по умолчанию 60)
+- **NewsConfig:SendTime**: Время отправки дайджеста
+- **NewsConfig:MaxNewsPerDigest**: Макс. новостей в дайджесте (по умолчанию 5)
+- **LlmConfig:Provider**: LLM провайдер (`""`, `polza`, `ollama`)
+- **LlmConfig:PolzaApiKey**: API-ключ Polza
+- **LlmConfig:OllamaUrl**: URL Ollama сервера
+- **ConnectionStrings:NewsDb**: SQLite connection string
 
 ## Логирование
 
-Обе системы используют **Serilog**:
+Все три сервиса используют **Serilog**:
 - Консольный вывод для мониторинга
 - SQLite sink (`log.db`) для постоянного хранения
 - Настройка в `Program.cs` через `UseSerilog()`
 
 ## Особенности реализации
 
+### .NET версия и совместимость
+
+Проект использует **.NET 10.0** с **EF Core 8.0.0**. Все 22 проекта в solution.
+
 ### Telegram.Bot версия и совместимость
 
 **КРИТИЧНО**: Проект использует Telegram.Bot v16.0.2
 
-- **НЕ обновлять** на v17+ из-за breaking changes (extension methods, изменение сигнатур)
+- **НЕ обновлять** на v17+ из-за breaking changes (extension methods, изменение сигнатур, переименование методов)
 - Polling реализован вручную через `GetUpdatesAsync` без Extensions.Polling
 - При работе с polling обязательно вызвать `DeleteWebhookAsync()` перед запуском
 
 ### SaveService ручной маппинг
 
-`SaveService.SaveSet()` вручную создает 34 объекта `ValuteModelDb` вместо использования рефлексии. Это намеренное решение для типобезопасности и явности, несмотря на многословность кода.
+`SaveService.SaveSet()` вручную создает 34 объекта `ValuteModelDb`. Это намеренное решение для типобезопасности.
 
 ### Background Services
 
 - `BackgroundService` для долгоживущих задач (polling)
-- `BackgroundTaskAbstract<T>` для периодических задач по расписанию
+- `BackgroundTaskAbstract<T>` для периодических задач (API, бот)
+- `NewsBackgroundTask<T>` для периодических задач (NewsService)
 - Scoped сервисы в фоновых задачах через `_serviceProvider.CreateScope()`
 
 ### Условная регистрация сервисов
 
-В обоих приложениях используется условная регистрация `IHostedService` в `Startup.ConfigureServices`:
-```csharp
-var config = Configuration.GetSection("Config").Get<Config>();
-if (config.EnableFeature)
-{
-    services.AddHostedService<FeatureService>();
-}
-```
+Во всех трех приложениях используется условная регистрация `IHostedService` в `Startup.ConfigureServices`:
+- **API**: `JobsCreateValute` при `JobsValute=True`, `JobsCreateValuteToHour` при `JobsValuteToHour=True`
+- **Bot**: `PollingBackgroundService` при `UsePolling=true`, `JobsSendNewsDigest` при `NewsEnabled=true`
+- **News**: `JobsFetchNews` при `NewsConfig.Enabled=true`
 
-## .NET версия и совместимость
+### Персонализация валют
 
-Проект использует **.NET 5.0** (SDK 10.0+). При создании новых проектов или обновлении зависимостей убедитесь в совместимости с .NET 5.0.
+Поле `UserDb.Currencies` (CSV-строка, nullable). NULL = дефолтный набор (USD, EUR, GBP, JPY, CNY). Команда `/currencies` — inline-клавиатура с 10 популярными валютами. Рассылка группирует пользователей по набору валют.
 
-## Источник данных
+## Источники данных
 
-**API ЦБ РФ**: https://www.cbr-xml-daily.ru/daily_json.js
-
-Возвращает JSON с курсами 34 валют (AMD, AUD, AZN, BGN, BRL, BYN, CAD, CHF, CNY, CZK, DKK, EUR, GBP, HKD, HUF, INR, JPY, KGS, KRW, KZT, MDL, NOK, PLN, RON, SEK, SGD, TJS, TMT, TRY, UAH, USD, UZS, XDR, ZAR). Каждая валюта содержит: `NumCode`, `CharCode`, `Nominal`, `Name`, `Value`, `Previous`, `Id`.
+- **Курсы валют**: https://www.cbr-xml-daily.ru/daily_json.js — JSON с 34 валютами ЦБ РФ
+- **Новости ЦБ**: RSS 2.0 с cbr.ru — парсится через XmlDocument в NewsService
