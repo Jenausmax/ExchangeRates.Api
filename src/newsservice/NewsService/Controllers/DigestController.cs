@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NewsService.Domain.Dto;
 using NewsService.Domain.Interfaces;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,9 +19,20 @@ namespace NewsService.Controllers
         }
 
         [HttpGet("latest")]
-        public async Task<ActionResult<DigestResponse>> GetLatest([FromQuery] int maxNews = 10, CancellationToken cancel = default)
+        public async Task<ActionResult<DigestResponse>> GetLatest(
+            [FromQuery] int maxNews = 10,
+            [FromQuery] DateTime? since = null,
+            CancellationToken cancel = default)
         {
-            var result = await _digestService.GetLatestDigestAsync(maxNews, cancel);
+            DigestResponse result;
+            if (since.HasValue)
+            {
+                result = await _digestService.GetDigestSinceAsync(since.Value, maxNews, cancel);
+            }
+            else
+            {
+                result = await _digestService.GetLatestDigestAsync(maxNews, cancel);
+            }
             return Ok(result);
         }
 

@@ -1,4 +1,6 @@
 ﻿using ExchangeRatesBot.Domain.Models;
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,5 +35,20 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Обновить подписку пользователя на новостной дайджест
         /// </summary>
         Task<bool> NewsSubscribeUpdate(long chatId, bool subscribe, CancellationToken cancel);
+
+        /// <summary>
+        /// Обновить персональное расписание новостей пользователя
+        /// </summary>
+        Task<bool> UpdateNewsTimes(long chatId, string newsTimes, CancellationToken cancel);
+
+        /// <summary>
+        /// Обновить время последней доставки новостей пользователю
+        /// </summary>
+        Task<bool> UpdateLastNewsDeliveredAt(long chatId, DateTime deliveredAt, CancellationToken cancel);
+
+        /// <summary>
+        /// Получить персональное расписание новостей пользователя (синхронный, работает с CurrentUser)
+        /// </summary>
+        string[] GetUserNewsTimes(long chatId);
     }
 }

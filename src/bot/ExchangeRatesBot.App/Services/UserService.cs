@@ -32,7 +32,8 @@ namespace ExchangeRatesBot.App.Services
                 CurrentUser.Id = userGetCollection.Id;
                 CurrentUser.ChatId = userGetCollection.ChatId;
                 CurrentUser.NickName = userGetCollection.NickName;
-                CurrentUser.Currencies = userGetCollection.Currencies;  // NEW: загрузить Currencies
+                CurrentUser.Currencies = userGetCollection.Currencies;
+                CurrentUser.NewsTimes = userGetCollection.NewsTimes;
                 await _userDb.Update(userGetCollection, cancel);
                 return true;
             }
@@ -119,6 +120,52 @@ namespace ExchangeRatesBot.App.Services
             userDb.NewsSubscribe = subscribe;
             await _userDb.Update(userDb, cancel);
             return true;
+        }
+
+        /// <summary>
+        /// Обновить персональное расписание новостей пользователя
+        /// </summary>
+        public async Task<bool> UpdateNewsTimes(long chatId, string newsTimes, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.NewsTimes = newsTimes;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Обновить время последней доставки новостей пользователю
+        /// </summary>
+        public async Task<bool> UpdateLastNewsDeliveredAt(long chatId, DateTime deliveredAt, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.LastNewsDeliveredAt = deliveredAt;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Получить персональное расписание новостей пользователя (синхронный, работает с CurrentUser)
+        /// </summary>
+        public string[] GetUserNewsTimes(long chatId)
+        {
+            if (CurrentUser != null && CurrentUser.ChatId == chatId && CurrentUser.NewsTimes != null)
+            {
+                return CurrentUser.NewsTimes.Split(',');
+            }
+            return Array.Empty<string>();
         }
     }
 }

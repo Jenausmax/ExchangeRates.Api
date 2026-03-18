@@ -90,5 +90,23 @@
         /// Заголовок меню новостей
         /// </summary>
         public static string NewsHeader { get; } = "Выберите действие:";
+
+        // --- Персонализированное расписание новостей ---
+
+        public static string NewsScheduleHeader { get; } = "Выберите время для получения новостей:\n(активные слоты отмечены ✅)";
+
+        public static string NewsScheduleSaved { get; } = "*Расписание сохранено!* Вы будете получать новости в: ";
+
+        public static string NewsScheduleEmpty { get; } = "Выберите хотя бы одно время для получения новостей.";
+
+        public static string NewsSubscribeTrueSchedule { get; } = "*Подписка на новости оформлена!* Расписание: 09:00. Настроить расписание можно через кнопку «Настроить расписание».";
+
+        public static string NewsAlreadySubscribed { get; } = "Вы уже подписаны на новости. Настроить расписание можно через кнопку «Настроить расписание».";
+
+        /// <summary>
+        /// Доступные слоты расписания (каждые 3 часа)
+        /// </summary>
+        public static string[] AvailableNewsSlots { get; } = new string[]
+            { "06:00", "09:00", "12:00", "15:00", "18:00", "21:00" };
     }
 }

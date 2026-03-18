@@ -49,6 +49,15 @@ namespace NewsService.DB.Repositories
                 .ToListAsync(cancel);
         }
 
+        public async Task<List<NewsTopicDb>> GetTopicsSinceAsync(DateTime since, int maxCount, CancellationToken cancel = default)
+        {
+            return await _db.Topics
+                .Where(t => t.PublishedAt > since)
+                .OrderByDescending(t => t.PublishedAt)
+                .Take(maxCount)
+                .ToListAsync(cancel);
+        }
+
         public async Task<int> MarkTopicsAsSentAsync(List<int> topicIds, CancellationToken cancel = default)
         {
             var topics = await _db.Topics

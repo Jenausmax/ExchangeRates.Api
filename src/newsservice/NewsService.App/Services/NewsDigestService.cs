@@ -4,6 +4,7 @@ using NewsService.Domain.Dto;
 using NewsService.Domain.Interfaces;
 using NewsService.Domain.Models;
 using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,30 @@ namespace NewsService.App.Services
         {
             var count = maxNews > 0 ? maxNews : _config.MaxNewsPerDigest;
             var topics = await _repository.GetUnsentTopicsAsync(count, cancel);
+
+            if (!topics.Any())
+            {
+                return new DigestResponse
+                {
+                    Message = "",
+                    TopicIds = new List<int>()
+                };
+            }
+
+            var message = FormatDigestMessage(topics);
+            var topicIds = topics.Select(t => t.Id).ToList();
+
+            return new DigestResponse
+            {
+                Message = message,
+                TopicIds = topicIds
+            };
+        }
+
+        public async Task<DigestResponse> GetDigestSinceAsync(DateTime since, int maxNews, CancellationToken cancel = default)
+        {
+            var count = maxNews > 0 ? maxNews : _config.MaxNewsPerDigest;
+            var topics = await _repository.GetTopicsSinceAsync(since, count, cancel);
 
             if (!topics.Any())
             {

@@ -13,6 +13,11 @@ namespace ExchangeRatesBot.Domain.Interfaces
         Task<NewsDigestResult> GetLatestDigestAsync(int maxNews = 10, CancellationToken cancel = default);
 
         /// <summary>
+        /// Получить дайджест новостей, опубликованных после указанного момента времени
+        /// </summary>
+        Task<NewsDigestResult> GetDigestSinceAsync(DateTime since, int maxNews = 5, CancellationToken cancel = default);
+
+        /// <summary>
         /// Пометить темы как отправленные
         /// </summary>
         Task MarkSentAsync(List<int> topicIds, CancellationToken cancel = default);

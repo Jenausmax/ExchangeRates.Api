@@ -22,6 +22,8 @@ namespace ExchangeRatesBot.App.Services
 
         // Временное состояние выбора валют для каждого пользователя (chatId -> HashSet<currencies>)
         private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingSelections = new();
+        // Временное состояние выбора расписания новостей (chatId -> HashSet<time slots>)
+        private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingNewsSchedule = new();
         //private Update _update;
 
         public CommandService(IUpdateService updateService,
@@ -88,6 +90,14 @@ namespace ExchangeRatesBot.App.Services
             var chatId = update.CallbackQuery.From.Id;
             await _userControl.SetUser(chatId);
 
+            // Toggle расписания новостей
+            if (callbackData.StartsWith("toggle_news_"))
+            {
+                var timeSlot = callbackData.Substring(12); // "toggle_news_09" -> "09"
+                await HandleToggleNewsSlot(update, chatId, timeSlot);
+                return;
+            }
+
             // Toggle валюты
             if (callbackData.StartsWith("toggle_"))
             {
@@ -143,21 +153,46 @@ namespace ExchangeRatesBot.App.Services
                     break;
 
                 case "news_subscribe":
-                    await _userControl.NewsSubscribeUpdate(_userControl.CurrentUser.ChatId, true, CancellationToken.None);
-                    await _updateService.EchoTextMessageAsync(
-                        update,
-                        BotPhrases.NewsSubscribeTrue,
-                        default);
-                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
-                    break;
+                    {
+                        var currentNewsTimes = _userControl.CurrentUser?.NewsTimes;
+                        if (!string.IsNullOrEmpty(currentNewsTimes))
+                        {
+                            await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsAlreadySubscribed, default);
+                        }
+                        else
+                        {
+                            await _userControl.UpdateNewsTimes(chatId, "09:00", CancellationToken.None);
+                            await _userControl.NewsSubscribeUpdate(chatId, true, CancellationToken.None);
+                            await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsSubscribeTrueSchedule, default);
+                        }
+                        await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                        break;
+                    }
 
                 case "news_unsubscribe":
-                    await _userControl.NewsSubscribeUpdate(_userControl.CurrentUser.ChatId, false, CancellationToken.None);
+                    await _userControl.UpdateNewsTimes(chatId, null, CancellationToken.None);
+                    await _userControl.NewsSubscribeUpdate(chatId, false, CancellationToken.None);
                     await _updateService.EchoTextMessageAsync(
                         update,
                         BotPhrases.NewsSubscribeFalse,
                         default);
                     await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
+                case "news_schedule":
+                    {
+                        var currentTimes = _userControl.GetUserNewsTimes(chatId);
+                        _pendingNewsSchedule[chatId] = new HashSet<string>(currentTimes);
+                        await _updateService.EchoTextMessageAsync(
+                            update,
+                            BotPhrases.NewsScheduleHeader,
+                            new InlineKeyboardMarkup(NewsScheduleKeyboard(chatId)));
+                        await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                        break;
+                    }
+
+                case "save_news_schedule":
+                    await HandleSaveNewsSchedule(update, chatId);
                     break;
 
                 case "news_latest":
@@ -418,10 +453,95 @@ namespace ExchangeRatesBot.App.Services
                 },
                 new List<InlineKeyboardButton>
                 {
+                    InlineKeyboardButton.WithCallbackData("Настроить расписание", "news_schedule")
+                },
+                new List<InlineKeyboardButton>
+                {
                     InlineKeyboardButton.WithCallbackData("Подписаться", "news_subscribe"),
                     InlineKeyboardButton.WithCallbackData("Отписаться", "news_unsubscribe")
                 }
             };
+        }
+
+        private async Task HandleToggleNewsSlot(Update update, long chatId, string timeSlotKey)
+        {
+            if (!_pendingNewsSchedule.ContainsKey(chatId))
+            {
+                var currentTimes = _userControl.GetUserNewsTimes(chatId);
+                _pendingNewsSchedule[chatId] = new HashSet<string>(currentTimes);
+            }
+
+            // timeSlotKey = "09" -> fullSlot = "09:00"
+            var fullSlot = timeSlotKey + ":00";
+            var selection = _pendingNewsSchedule[chatId];
+            if (selection.Contains(fullSlot))
+                selection.Remove(fullSlot);
+            else
+                selection.Add(fullSlot);
+
+            await _botService.Client.EditMessageReplyMarkupAsync(
+                chatId: update.CallbackQuery.Message.Chat.Id,
+                messageId: update.CallbackQuery.Message.MessageId,
+                replyMarkup: new InlineKeyboardMarkup(NewsScheduleKeyboard(chatId)));
+
+            await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+        }
+
+        private async Task HandleSaveNewsSchedule(Update update, long chatId)
+        {
+            if (!_pendingNewsSchedule.ContainsKey(chatId) || _pendingNewsSchedule[chatId].Count == 0)
+            {
+                await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsScheduleEmpty, default);
+                await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                return;
+            }
+
+            var selected = _pendingNewsSchedule[chatId];
+            var sortedSlots = selected.OrderBy(s => s).ToArray();
+            var newsTimesString = string.Join(",", sortedSlots);
+            await _userControl.UpdateNewsTimes(chatId, newsTimesString, CancellationToken.None);
+            await _userControl.NewsSubscribeUpdate(chatId, true, CancellationToken.None);
+
+            _pendingNewsSchedule.TryRemove(chatId, out _);
+
+            await _updateService.EchoTextMessageAsync(
+                update,
+                BotPhrases.NewsScheduleSaved + newsTimesString,
+                default);
+            await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+        }
+
+        private List<List<InlineKeyboardButton>> NewsScheduleKeyboard(long chatId)
+        {
+            var selected = _pendingNewsSchedule.ContainsKey(chatId)
+                ? _pendingNewsSchedule[chatId]
+                : new HashSet<string>();
+
+            var rows = new List<List<InlineKeyboardButton>>();
+            var currentRow = new List<InlineKeyboardButton>();
+
+            foreach (var slot in BotPhrases.AvailableNewsSlots)
+            {
+                var isSelected = selected.Contains(slot);
+                var label = isSelected ? $"✅ {slot}" : slot;
+                var slotKey = slot.Substring(0, 2); // "09:00" -> "09"
+                currentRow.Add(InlineKeyboardButton.WithCallbackData(label, $"toggle_news_{slotKey}"));
+
+                if (currentRow.Count == 3)
+                {
+                    rows.Add(currentRow);
+                    currentRow = new List<InlineKeyboardButton>();
+                }
+            }
+            if (currentRow.Count > 0)
+                rows.Add(currentRow);
+
+            rows.Add(new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData("Сохранить", "save_news_schedule")
+            });
+
+            return rows;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using ExchangeRatesBot.Domain.Models;
+using System;
 
 namespace ExchangeRatesBot.DB.Models
 {
@@ -9,7 +10,9 @@ namespace ExchangeRatesBot.DB.Models
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public bool Subscribe { get; set; }
-        public string Currencies { get; set; }  // NEW: "USD,EUR,GBP" или null для дефолта
+        public string Currencies { get; set; }
         public bool NewsSubscribe { get; set; }
+        public string NewsTimes { get; set; }
+        public DateTime? LastNewsDeliveredAt { get; set; }
     }
 }

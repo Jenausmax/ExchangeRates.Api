@@ -56,6 +56,27 @@ namespace ExchangeRatesBot.App.Services
         }
 
         /// <summary>
+        /// Получить дайджест новостей, опубликованных после указанного момента времени
+        /// </summary>
+        public async Task<NewsDigestResult> GetDigestSinceAsync(DateTime since, int maxNews = 5, CancellationToken cancel = default)
+        {
+            try
+            {
+                var sinceStr = since.ToString("o");
+                var response = await _httpClient.GetAsync($"api/digest/latest?maxNews={maxNews}&since={Uri.EscapeDataString(sinceStr)}", cancel);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync(cancel);
+                return JsonSerializer.Deserialize<NewsDigestResult>(json, _jsonOptions)
+                       ?? new NewsDigestResult { Message = "", TopicIds = new List<int>() };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to get digest since {Since} from NewsService", since);
+                return new NewsDigestResult { Message = "", TopicIds = new List<int>() };
+            }
+        }
+
+        /// <summary>
         /// Пометить темы как отправленные
         /// </summary>
         public async Task MarkSentAsync(List<int> topicIds, CancellationToken cancel = default)
