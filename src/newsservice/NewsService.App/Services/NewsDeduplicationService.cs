@@ -42,9 +42,15 @@ namespace NewsService.App.Services
                     var summary = NewsNormalizationHelper.StripHtml(item.Description);
                     summary = NewsNormalizationHelper.TruncateText(summary);
 
+                    if (!_llmService.IsAvailable)
+                    {
+                        _logger.Debug("LLM not available for: {Title}, using plain text", normalizedTitle);
+                    }
+
                     // Пробуем LLM-суммаризацию если доступна
                     if (_llmService.IsAvailable && !string.IsNullOrWhiteSpace(item.Description))
                     {
+                        _logger.Debug("LLM is available, attempting summarization for: {Title}", normalizedTitle);
                         try
                         {
                             var llmSummary = await _llmService.SummarizeAsync(

@@ -38,16 +38,22 @@ namespace NewsService
 
             // Регистрация LLM-сервиса в зависимости от конфигурации
             var llmConfig = Config.GetSection("LlmConfig").Get<LlmConfig>();
-            if (llmConfig != null && llmConfig.Provider?.ToLower() == "polza")
+            var llmProvider = llmConfig?.Provider?.ToLower() ?? "";
+            if (llmProvider == "polza")
             {
+                Serilog.Log.Information("LLM provider: Polza (model: {Model}, API key set: {HasKey})",
+                    llmConfig.PolzaModel, !string.IsNullOrWhiteSpace(llmConfig.PolzaApiKey));
                 services.AddSingleton<ILlmService, PolzaLlmService>();
             }
-            else if (llmConfig != null && llmConfig.Provider?.ToLower() == "ollama")
+            else if (llmProvider == "ollama")
             {
+                Serilog.Log.Information("LLM provider: Ollama (URL: {Url}, model: {Model})",
+                    llmConfig.OllamaUrl, llmConfig.OllamaModel);
                 services.AddSingleton<ILlmService, OllamaLlmService>();
             }
             else
             {
+                Serilog.Log.Information("LLM provider: None (NoopLlmService) — summarization disabled");
                 services.AddSingleton<ILlmService, NoopLlmService>();
             }
 

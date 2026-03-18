@@ -90,6 +90,18 @@ namespace ExchangeRatesBot.App.Services
             var chatId = update.CallbackQuery.From.Id;
             await _userControl.SetUser(chatId);
 
+            // Пагинация новостей: news_p_{id}
+            if (callbackData.StartsWith("news_p_"))
+            {
+                var idStr = callbackData.Substring(7); // "news_p_42" -> "42"
+                if (int.TryParse(idStr, out var beforeId))
+                {
+                    await HandleNewsPage(update, beforeId);
+                }
+                await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                return;
+            }
+
             // Toggle расписания новостей
             if (callbackData.StartsWith("toggle_news_"))
             {
@@ -203,7 +215,16 @@ namespace ExchangeRatesBot.App.Services
                     }
                     else
                     {
-                        await _updateService.EchoTextMessageAsync(update, digest.Message, default);
+                        var replyMarkup = digest.HasMore && digest.TopicIds?.Count > 0
+                            ? new InlineKeyboardMarkup(new List<List<InlineKeyboardButton>>
+                            {
+                                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(BotPhrases.BtnNewsMore, $"news_p_{digest.TopicIds.Last()}")
+                                }
+                            })
+                            : null;
+                        await _updateService.EchoTextMessageAsync(update, digest.Message, replyMarkup);
                     }
                     await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
                     break;
@@ -461,6 +482,28 @@ namespace ExchangeRatesBot.App.Services
                     InlineKeyboardButton.WithCallbackData("Отписаться", "news_unsubscribe")
                 }
             };
+        }
+
+        private async Task HandleNewsPage(Update update, int beforeId)
+        {
+            var digest = await _newsClient.GetDigestBeforeIdAsync(beforeId, 5, CancellationToken.None);
+            if (string.IsNullOrWhiteSpace(digest?.Message))
+            {
+                await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsNoMore, default);
+            }
+            else
+            {
+                var replyMarkup = digest.HasMore && digest.TopicIds?.Count > 0
+                    ? new InlineKeyboardMarkup(new List<List<InlineKeyboardButton>>
+                    {
+                        new List<InlineKeyboardButton>
+                        {
+                            InlineKeyboardButton.WithCallbackData(BotPhrases.BtnNewsMore, $"news_p_{digest.TopicIds.Last()}")
+                        }
+                    })
+                    : null;
+                await _updateService.EchoTextMessageAsync(update, digest.Message, replyMarkup);
+            }
         }
 
         private async Task HandleToggleNewsSlot(Update update, long chatId, string timeSlotKey)

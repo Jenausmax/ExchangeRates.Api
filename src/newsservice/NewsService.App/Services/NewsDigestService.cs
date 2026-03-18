@@ -26,17 +26,24 @@ namespace NewsService.App.Services
             _logger = logger;
         }
 
-        public async Task<DigestResponse> GetLatestDigestAsync(int maxNews, CancellationToken cancel = default)
+        public async Task<DigestResponse> GetLatestDigestAsync(int maxNews, bool all = false, CancellationToken cancel = default)
         {
             var count = maxNews > 0 ? maxNews : _config.MaxNewsPerDigest;
-            var topics = await _repository.GetUnsentTopicsAsync(count, cancel);
+            // all=true — все новости (для интерактивного просмотра), false — только неотправленные (для рассылки)
+            var topics = all
+                ? await _repository.GetAllTopicsAsync(count + 1, cancel)
+                : await _repository.GetUnsentTopicsAsync(count + 1, cancel);
+            var hasMore = topics.Count > count;
+            if (hasMore)
+                topics = topics.Take(count).ToList();
 
             if (!topics.Any())
             {
                 return new DigestResponse
                 {
                     Message = "",
-                    TopicIds = new List<int>()
+                    TopicIds = new List<int>(),
+                    HasMore = false
                 };
             }
 
@@ -46,21 +53,26 @@ namespace NewsService.App.Services
             return new DigestResponse
             {
                 Message = message,
-                TopicIds = topicIds
+                TopicIds = topicIds,
+                HasMore = hasMore
             };
         }
 
         public async Task<DigestResponse> GetDigestSinceAsync(DateTime since, int maxNews, CancellationToken cancel = default)
         {
             var count = maxNews > 0 ? maxNews : _config.MaxNewsPerDigest;
-            var topics = await _repository.GetTopicsSinceAsync(since, count, cancel);
+            var topics = await _repository.GetTopicsSinceAsync(since, count + 1, cancel);
+            var hasMore = topics.Count > count;
+            if (hasMore)
+                topics = topics.Take(count).ToList();
 
             if (!topics.Any())
             {
                 return new DigestResponse
                 {
                     Message = "",
-                    TopicIds = new List<int>()
+                    TopicIds = new List<int>(),
+                    HasMore = false
                 };
             }
 
@@ -70,7 +82,37 @@ namespace NewsService.App.Services
             return new DigestResponse
             {
                 Message = message,
-                TopicIds = topicIds
+                TopicIds = topicIds,
+                HasMore = hasMore
+            };
+        }
+
+        public async Task<DigestResponse> GetDigestBeforeIdAsync(int beforeId, int maxNews, CancellationToken cancel = default)
+        {
+            var count = maxNews > 0 ? maxNews : _config.MaxNewsPerDigest;
+            var topics = await _repository.GetTopicsBeforeIdAsync(beforeId, count + 1, cancel);
+            var hasMore = topics.Count > count;
+            if (hasMore)
+                topics = topics.Take(count).ToList();
+
+            if (!topics.Any())
+            {
+                return new DigestResponse
+                {
+                    Message = "",
+                    TopicIds = new List<int>(),
+                    HasMore = false
+                };
+            }
+
+            var message = FormatDigestMessage(topics, "Продолжение");
+            var topicIds = topics.Select(t => t.Id).ToList();
+
+            return new DigestResponse
+            {
+                Message = message,
+                TopicIds = topicIds,
+                HasMore = hasMore
             };
         }
 
@@ -91,10 +133,11 @@ namespace NewsService.App.Services
             };
         }
 
-        private string FormatDigestMessage(List<NewsTopicDb> topics)
+        private string FormatDigestMessage(List<NewsTopicDb> topics, string header = null)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("*Новостной дайджест* \U0001F4F0\n");
+            var title = string.IsNullOrWhiteSpace(header) ? "Новостной дайджест" : header;
+            sb.AppendLine($"*{title}* \U0001F4F0\n");
 
             for (int i = 0; i < topics.Count; i++)
             {

@@ -17,5 +17,7 @@ namespace NewsService.Domain.Interfaces
         Task<int> GetUnsentCountAsync(CancellationToken cancel = default);
         Task<DateTime?> GetLastFetchTimeAsync(CancellationToken cancel = default);
         Task<List<NewsTopicDb>> GetTopicsSinceAsync(DateTime since, int maxCount, CancellationToken cancel = default);
+        Task<List<NewsTopicDb>> GetTopicsBeforeIdAsync(int beforeId, int maxCount, CancellationToken cancel = default);
+        Task<List<NewsTopicDb>> GetAllTopicsAsync(int maxCount, CancellationToken cancel = default);
     }
 }

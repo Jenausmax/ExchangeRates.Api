@@ -6,5 +6,6 @@ namespace NewsService.Domain.Dto
     {
         public string Message { get; set; }
         public List<int> TopicIds { get; set; }
+        public bool HasMore { get; set; }
     }
 }

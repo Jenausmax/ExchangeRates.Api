@@ -8,8 +8,9 @@ namespace NewsService.Domain.Interfaces
 {
     public interface INewsDigestService
     {
-        Task<DigestResponse> GetLatestDigestAsync(int maxNews, CancellationToken cancel = default);
+        Task<DigestResponse> GetLatestDigestAsync(int maxNews, bool all = false, CancellationToken cancel = default);
         Task<DigestResponse> GetDigestSinceAsync(DateTime since, int maxNews, CancellationToken cancel = default);
+        Task<DigestResponse> GetDigestBeforeIdAsync(int beforeId, int maxNews, CancellationToken cancel = default);
         Task<int> MarkAsSentAsync(List<int> topicIds, CancellationToken cancel = default);
         Task<ServiceStatusResponse> GetStatusAsync(CancellationToken cancel = default);
     }

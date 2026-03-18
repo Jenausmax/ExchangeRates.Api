@@ -108,5 +108,10 @@
         /// </summary>
         public static string[] AvailableNewsSlots { get; } = new string[]
             { "06:00", "09:00", "12:00", "15:00", "18:00", "21:00" };
+
+        // --- Пагинация новостей ---
+
+        public static string NewsNoMore { get; } = "Больше новостей нет.";
+        public static string BtnNewsMore { get; } = "Далее \u2B07\uFE0F";
     }
 }

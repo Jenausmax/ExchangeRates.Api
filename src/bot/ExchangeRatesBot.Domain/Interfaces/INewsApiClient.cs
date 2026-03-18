@@ -18,6 +18,11 @@ namespace ExchangeRatesBot.Domain.Interfaces
         Task<NewsDigestResult> GetDigestSinceAsync(DateTime since, int maxNews = 5, CancellationToken cancel = default);
 
         /// <summary>
+        /// Получить дайджест новостей до указанного ID (пагинация)
+        /// </summary>
+        Task<NewsDigestResult> GetDigestBeforeIdAsync(int beforeId, int maxNews = 5, CancellationToken cancel = default);
+
+        /// <summary>
         /// Пометить темы как отправленные
         /// </summary>
         Task MarkSentAsync(List<int> topicIds, CancellationToken cancel = default);
@@ -32,6 +37,7 @@ namespace ExchangeRatesBot.Domain.Interfaces
     {
         public string Message { get; set; }
         public List<int> TopicIds { get; set; }
+        public bool HasMore { get; set; }
     }
 
     public class NewsServiceStatus

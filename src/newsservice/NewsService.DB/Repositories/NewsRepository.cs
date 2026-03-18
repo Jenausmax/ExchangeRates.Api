@@ -83,6 +83,30 @@ namespace NewsService.DB.Repositories
             return await _db.Topics.CountAsync(t => !t.IsSent, cancel);
         }
 
+        public async Task<List<NewsTopicDb>> GetAllTopicsAsync(int maxCount, CancellationToken cancel = default)
+        {
+            return await _db.Topics
+                .OrderByDescending(t => t.PublishedAt)
+                .Take(maxCount)
+                .ToListAsync(cancel);
+        }
+
+        public async Task<List<NewsTopicDb>> GetTopicsBeforeIdAsync(int beforeId, int maxCount, CancellationToken cancel = default)
+        {
+            // Берём PublishedAt опорной записи для корректной курсорной пагинации по дате
+            var pivot = await _db.Topics
+                .Where(t => t.Id == beforeId)
+                .Select(t => t.PublishedAt)
+                .FirstOrDefaultAsync(cancel);
+
+            return await _db.Topics
+                .Where(t => t.PublishedAt < pivot || (t.PublishedAt == pivot && t.Id < beforeId))
+                .OrderByDescending(t => t.PublishedAt)
+                .ThenByDescending(t => t.Id)
+                .Take(maxCount)
+                .ToListAsync(cancel);
+        }
+
         public async Task<DateTime?> GetLastFetchTimeAsync(CancellationToken cancel = default)
         {
             if (!await _db.Topics.AnyAsync(cancel))

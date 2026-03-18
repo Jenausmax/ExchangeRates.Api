@@ -9,7 +9,12 @@ namespace NewsService.Configuration
         public string[] RssFeeds { get; set; } = new[]
         {
             "https://www.cbr.ru/rss/RssPress",
-            "https://www.cbr.ru/rss/eventrss"
+            "https://www.cbr.ru/rss/eventrss",
+            "https://rssexport.rbc.ru/rbcnews/news/30/full.rss",
+            "https://www.interfax.ru/rss.asp",
+            "https://tass.ru/rss/v2.xml",
+            "https://www.kommersant.ru/RSS/section-economics.xml",
+            "https://www.banki.ru/xml/news.rss"
         };
     }
 }

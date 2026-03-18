@@ -42,7 +42,7 @@ namespace ExchangeRatesBot.App.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/digest/latest?maxNews={maxNews}", cancel);
+                var response = await _httpClient.GetAsync($"api/digest/latest?maxNews={maxNews}&all=true", cancel);
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync(cancel);
                 return JsonSerializer.Deserialize<NewsDigestResult>(json, _jsonOptions)
@@ -73,6 +73,26 @@ namespace ExchangeRatesBot.App.Services
             {
                 _logger.Error(ex, "Failed to get digest since {Since} from NewsService", since);
                 return new NewsDigestResult { Message = "", TopicIds = new List<int>() };
+            }
+        }
+
+        /// <summary>
+        /// Получить дайджест новостей до указанного ID (пагинация)
+        /// </summary>
+        public async Task<NewsDigestResult> GetDigestBeforeIdAsync(int beforeId, int maxNews = 5, CancellationToken cancel = default)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/digest/latest?maxNews={maxNews}&beforeId={beforeId}", cancel);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync(cancel);
+                return JsonSerializer.Deserialize<NewsDigestResult>(json, _jsonOptions)
+                       ?? new NewsDigestResult { Message = "", TopicIds = new List<int>(), HasMore = false };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to get digest before ID {BeforeId} from NewsService", beforeId);
+                return new NewsDigestResult { Message = "", TopicIds = new List<int>(), HasMore = false };
             }
         }
 

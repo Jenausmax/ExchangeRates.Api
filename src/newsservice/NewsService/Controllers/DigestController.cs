@@ -22,16 +22,22 @@ namespace NewsService.Controllers
         public async Task<ActionResult<DigestResponse>> GetLatest(
             [FromQuery] int maxNews = 10,
             [FromQuery] DateTime? since = null,
+            [FromQuery] int? beforeId = null,
+            [FromQuery] bool all = false,
             CancellationToken cancel = default)
         {
             DigestResponse result;
-            if (since.HasValue)
+            if (beforeId.HasValue)
+            {
+                result = await _digestService.GetDigestBeforeIdAsync(beforeId.Value, maxNews, cancel);
+            }
+            else if (since.HasValue)
             {
                 result = await _digestService.GetDigestSinceAsync(since.Value, maxNews, cancel);
             }
             else
             {
-                result = await _digestService.GetLatestDigestAsync(maxNews, cancel);
+                result = await _digestService.GetLatestDigestAsync(maxNews, all, cancel);
             }
             return Ok(result);
         }
