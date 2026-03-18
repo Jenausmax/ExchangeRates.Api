@@ -301,7 +301,7 @@ graph TB
 
     subgraph InfrastructureBot["Infrastructure Layer (Bot.DB)"]
         BotDataDb["DataDb<br/>: DbContext"]
-        UserDb["UserDb : Entity<br/>(ChatId, Subscribe,<br/>NewsSubscribe, Currencies)"]
+        UserDb["UserDb : Entity<br/>(ChatId, Subscribe,<br/>NewsSubscribe, Currencies,<br/>NewsTimes, LastNewsDeliveredAt)"]
         RepositoryDb["RepositoryDb T<br/>: IBaseRepositoryDb T"]
     end
 
@@ -587,25 +587,29 @@ sequenceDiagram
     participant TG as Telegram API
 
     Job->>Job: Проверка: NewsTime == текущее время?
-    Job->>NAC: GetLatestDigestAsync()
-    NAC->>News: GET /api/digest/latest
-    News->>NDS: GetLatestDigestAsync()
-    NDS->>NDB: GetUnsentTopicsAsync()
-    NDB-->>NDS: NewsTopicDb[]
-    NDS-->>News: DigestResponse {Message, TopicIds}
-    News-->>NAC: JSON ответ
-    NAC-->>Job: NewsDigestResult
+    Job->>Job: Найти пользователей с NewsTimes, совпадающим с текущим HH:mm
 
-    Job->>Job: Получить подписчиков (NewsSubscribe=true)
+    loop для каждого пользователя с совпавшим слотом
+        alt LastNewsDeliveredAt != null
+            Job->>NAC: GetDigestSinceAsync(user.LastNewsDeliveredAt)
+            NAC->>News: GET /api/digest/latest?since=...
+            News->>NDS: GetDigestSinceAsync(since)
+            NDS->>NDB: GetTopicsSinceAsync(since)
+        else LastNewsDeliveredAt == null
+            Job->>NAC: GetLatestDigestAsync()
+            NAC->>News: GET /api/digest/latest
+            News->>NDS: GetLatestDigestAsync()
+            NDS->>NDB: GetUnsentTopicsAsync()
+        end
+        NDB-->>NDS: NewsTopicDb[]
+        NDS-->>News: DigestResponse {Message, TopicIds}
+        News-->>NAC: JSON ответ
+        NAC-->>Job: NewsDigestResult
 
-    loop для каждого подписчика
         Job->>Bot: SendTextMessageAsync(chatId, digest)
         Bot->>TG: Отправка сообщения
+        Job->>Job: UPDATE user.LastNewsDeliveredAt = UtcNow
     end
-
-    Job->>NAC: MarkSentAsync(topicIds)
-    NAC->>News: POST /api/digest/mark-sent
-    News->>NDB: UPDATE SET IsSent=true
 ```
 
 ### 6.4 Контракты HTTP-взаимодействия
@@ -711,6 +715,8 @@ erDiagram
         bool Subscribe
         bool NewsSubscribe
         string Currencies "nullable, CSV"
+        string NewsTimes "nullable, CSV расписания"
+        datetime LastNewsDeliveredAt "nullable"
     }
 
     NewsTopicDb {
@@ -1086,3 +1092,8 @@ sequenceDiagram
 
 **Решение**: Обновить все 22 проекта до .NET 10.0, EF Core до 8.0.0. Telegram.Bot остается на v16.0.2.
 **Обоснование**: Актуальная платформа, LTS-поддержка. EF Core 8.0.0 -- стабильная версия, совместимая с .NET 10.0.
+
+### ADR-012: Per-user расписание новостей вместо глобального времени
+
+**Решение**: Поле `NewsTimes` (CSV-строка слотов, nullable) + `LastNewsDeliveredAt` (DateTime?) в UserDb. Параметр `since` в API NewsService.
+**Обоснование**: Глобальный `IsSent` + единое `NewsTime` не позволяли пользователям выбирать время и частоту. `NewsTimes=null` заменяет роль `NewsSubscribe`. Per-user tracking через `LastNewsDeliveredAt` вместо глобального mark-sent исключает дублирование и пропуски между пользователями с разным расписанием. CSV-строка -- проверенный паттерн (аналогично `Currencies`).

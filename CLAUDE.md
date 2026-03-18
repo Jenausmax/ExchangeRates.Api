@@ -142,7 +142,7 @@ src/bot/
   ExchangeRatesBot/                    # Web Host, UpdateController (webhook)
   ExchangeRatesBot.App/               # BotService, CommandService, UpdateService, MessageValuteService, UserService, NewsApiClientService, BotPhrases
   ExchangeRatesBot.Domain/            # Интерфейсы (IBotService, ICommandBot, IUserService, INewsApiClient), модели
-  ExchangeRatesBot.DB/                # EF Core DataDb, UserDb (ChatId, Subscribe, NewsSubscribe, Currencies), RepositoryDb<T>
+  ExchangeRatesBot.DB/                # EF Core DataDb, UserDb (ChatId, Subscribe, NewsSubscribe, Currencies, NewsTimes, LastNewsDeliveredAt), RepositoryDb<T>
   ExchangeRatesBot.Configuration/     # BotConfig (BotToken, UsePolling, Webhook, UrlRequest, NewsServiceUrl, NewsEnabled, NewsTime)
   ExchangeRatesBot.Maintenance/       # JobsSendMessageUsers, JobsSendNewsDigest, PollingBackgroundService
   ExchangeRatesBot.Migrations/        # EF Core миграции
@@ -152,7 +152,7 @@ src/bot/
 
 **Reply-клавиатура**: 3 ряда — (Курс сегодня | За 7 дней), (Подписка | Помощь), (Новости)
 
-**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `news_subscribe`, `news_unsubscribe`, `news_latest`
+**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `news_subscribe`, `news_unsubscribe`, `news_latest`, `news_schedule`, `toggle_news_{HH}`, `save_news_schedule`
 
 **Режимы работы** (через `BotConfig.UsePolling`):
 - **Polling** (true, рекомендуется для Docker): `PollingBackgroundService` → `GetUpdatesAsync` (long polling, 30s)
@@ -172,7 +172,7 @@ src/newsservice/
 ```
 
 **API эндпоинты**:
-- `GET /api/digest/latest?maxNews=10` — последний неотправленный дайджест
+- `GET /api/digest/latest?maxNews=10&since=2026-03-18T09:00:00Z` — дайджест (since опционален, без него — неотправленные)
 - `POST /api/digest/mark-sent` — пометить темы как отправленные
 - `GET /api/digest/status` — статус сервиса
 
@@ -215,8 +215,8 @@ src/newsservice/
 - **BotConfig:UrlRequest**: URL ExchangeRates.Api (Docker: `http://exchangerates-api:80/`)
 - **BotConfig:TimeOne/TimeTwo**: Время рассылки курсов
 - **BotConfig:NewsServiceUrl**: URL NewsService (Docker: `http://exchangerates-news:80/`)
-- **BotConfig:NewsEnabled**: Включить новостной дайджест (`true`/`false`)
-- **BotConfig:NewsTime**: Время рассылки новостей (например, "09:00")
+- **BotConfig:NewsEnabled**: Включить фоновую рассылку новостей (`true`/`false`)
+- **BotConfig:NewsTime**: Дефолтное время для новых подписчиков (например, "09:00"), per-user расписание хранится в UserDb.NewsTimes
 - **ConnectionStrings:SqliteConnection**: SQLite connection string
 
 ### NewsService (appsettings.json + .env)
@@ -272,6 +272,12 @@ src/newsservice/
 ### Персонализация валют
 
 Поле `UserDb.Currencies` (CSV-строка, nullable). NULL = дефолтный набор (USD, EUR, GBP, JPY, CNY). Команда `/currencies` — inline-клавиатура с 10 популярными валютами. Рассылка группирует пользователей по набору валют.
+
+### Персонализированное расписание новостей
+
+Поле `UserDb.NewsTimes` (CSV-строка слотов, nullable). NULL = не подписан на новости. Например: `"09:00"`, `"09:00,18:00"`, `"06:00,12:00,21:00"`. Доступные слоты: 06:00, 09:00, 12:00, 15:00, 18:00, 21:00. Команда `/news` → "Настроить расписание" → inline-клавиатура с toggle-кнопками.
+
+Поле `UserDb.LastNewsDeliveredAt` (DateTime?, nullable) — время последней доставки новостей. `JobsSendNewsDigest` каждую минуту проверяет совпадение текущего HH:mm со слотами пользователей и запрашивает персональный дайджест через `GET /api/digest/latest?since=LastNewsDeliveredAt`.
 
 ## Источники данных
 
