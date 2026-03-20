@@ -228,6 +228,18 @@ namespace ExchangeRatesBot.App.Services
                     }
                     await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
                     break;
+
+                case "important_news_subscribe":
+                    await _userControl.ImportantNewsSubscribeUpdate(chatId, true, CancellationToken.None);
+                    await _updateService.EchoTextMessageAsync(update, BotPhrases.ImportantNewsSubscribeTrue, default);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
+                case "important_news_unsubscribe":
+                    await _userControl.ImportantNewsSubscribeUpdate(chatId, false, CancellationToken.None);
+                    await _updateService.EchoTextMessageAsync(update, BotPhrases.ImportantNewsSubscribeFalse, default);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
             }
         }
 
@@ -475,6 +487,11 @@ namespace ExchangeRatesBot.App.Services
                 new List<InlineKeyboardButton>
                 {
                     InlineKeyboardButton.WithCallbackData("Настроить расписание", "news_schedule")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("Важные новости: вкл", "important_news_subscribe"),
+                    InlineKeyboardButton.WithCallbackData("Важные новости: выкл", "important_news_unsubscribe")
                 },
                 new List<InlineKeyboardButton>
                 {

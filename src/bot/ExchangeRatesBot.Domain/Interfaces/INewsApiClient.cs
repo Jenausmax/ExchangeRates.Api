@@ -31,6 +31,11 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Получить статус NewsService
         /// </summary>
         Task<NewsServiceStatus> GetStatusAsync(CancellationToken cancel = default);
+
+        /// <summary>
+        /// Получить самую важную новость (по количеству упоминаний в СМИ)
+        /// </summary>
+        Task<NewsDigestResult> GetMostImportantAsync(CancellationToken cancel = default);
     }
 
     public class NewsDigestResult

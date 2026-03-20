@@ -113,5 +113,32 @@ namespace NewsService.DB.Repositories
                 return null;
             return await _db.Topics.MaxAsync(t => t.FetchedAt, cancel);
         }
+
+        public async Task<List<NewsTopicDb>> GetRecentTopicsForSimilarityAsync(int hoursBack = 48, CancellationToken cancel = default)
+        {
+            var since = DateTime.UtcNow.AddHours(-hoursBack);
+            return await _db.Topics
+                .Where(t => t.FetchedAt >= since)
+                .ToListAsync(cancel);
+        }
+
+        public async Task<NewsTopicDb> GetMostImportantUnsentAsync(CancellationToken cancel = default)
+        {
+            return await _db.Topics
+                .Where(t => !t.IsSent)
+                .OrderByDescending(t => t.SourceCount)
+                .ThenByDescending(t => t.PublishedAt)
+                .FirstOrDefaultAsync(cancel);
+        }
+
+        public async Task IncrementSourceCountAsync(int topicId, CancellationToken cancel = default)
+        {
+            var topic = await _db.Topics.FindAsync(new object[] { topicId }, cancel);
+            if (topic != null)
+            {
+                topic.SourceCount++;
+                await _db.SaveChangesAsync(cancel);
+            }
+        }
     }
 }

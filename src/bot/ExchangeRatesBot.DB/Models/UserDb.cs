@@ -14,5 +14,7 @@ namespace ExchangeRatesBot.DB.Models
         public bool NewsSubscribe { get; set; }
         public string NewsTimes { get; set; }
         public DateTime? LastNewsDeliveredAt { get; set; }
+        public bool ImportantNewsSubscribe { get; set; }
+        public DateTime? LastImportantNewsAt { get; set; }
     }
 }

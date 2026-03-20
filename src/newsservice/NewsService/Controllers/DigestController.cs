@@ -61,5 +61,12 @@ namespace NewsService.Controllers
             var result = await _digestService.GetStatusAsync(cancel);
             return Ok(result);
         }
+
+        [HttpGet("top")]
+        public async Task<ActionResult<DigestResponse>> GetTop(CancellationToken cancel = default)
+        {
+            var result = await _digestService.GetMostImportantAsync(cancel);
+            return Ok(result);
+        }
     }
 }

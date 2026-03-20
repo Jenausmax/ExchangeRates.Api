@@ -12,5 +12,6 @@ namespace NewsService.Domain.Models
         public DateTime FetchedAt { get; set; }
         public bool IsSent { get; set; }
         public string ContentHash { get; set; }
+        public int SourceCount { get; set; } = 1;
     }
 }

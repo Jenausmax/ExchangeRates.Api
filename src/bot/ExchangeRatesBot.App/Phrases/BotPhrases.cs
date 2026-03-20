@@ -113,5 +113,11 @@
 
         public static string NewsNoMore { get; } = "Больше новостей нет.";
         public static string BtnNewsMore { get; } = "Далее \u2B07\uFE0F";
+
+        // --- Важные новости ---
+
+        public static string ImportantNewsSubscribeTrue { get; } = "*Подписка на важные новости оформлена!* Вы будете получать самую обсуждаемую новость каждый час.";
+        public static string ImportantNewsSubscribeFalse { get; } = "*Подписка на важные новости отменена.*";
+        public static string ImportantNewsAlreadySubscribed { get; } = "Вы уже подписаны на важные новости.";
     }
 }

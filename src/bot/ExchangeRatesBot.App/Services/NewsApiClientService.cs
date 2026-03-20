@@ -133,5 +133,25 @@ namespace ExchangeRatesBot.App.Services
                 return new NewsServiceStatus();
             }
         }
+
+        /// <summary>
+        /// Получить самую важную новость (по количеству упоминаний в СМИ)
+        /// </summary>
+        public async Task<NewsDigestResult> GetMostImportantAsync(CancellationToken cancel = default)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/digest/top", cancel);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync(cancel);
+                return JsonSerializer.Deserialize<NewsDigestResult>(json, _jsonOptions)
+                       ?? new NewsDigestResult { Message = "", TopicIds = new List<int>() };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to get most important news from NewsService");
+                return new NewsDigestResult { Message = "", TopicIds = new List<int>() };
+            }
+        }
     }
 }

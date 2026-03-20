@@ -133,6 +133,50 @@ namespace NewsService.App.Services
             };
         }
 
+        public async Task<DigestResponse> GetMostImportantAsync(CancellationToken cancel = default)
+        {
+            var topic = await _repository.GetMostImportantUnsentAsync(cancel);
+            if (topic == null)
+            {
+                return new DigestResponse
+                {
+                    Message = "",
+                    TopicIds = new List<int>(),
+                    HasMore = false
+                };
+            }
+
+            var message = FormatImportantNewsMessage(topic);
+            return new DigestResponse
+            {
+                Message = message,
+                TopicIds = new List<int> { topic.Id },
+                HasMore = false
+            };
+        }
+
+        private string FormatImportantNewsMessage(NewsTopicDb topic)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"*Важная новость* \U0001F525\n");
+            sb.AppendLine($"*{EscapeMarkdown(topic.Title)}*");
+
+            if (!string.IsNullOrWhiteSpace(topic.Summary))
+            {
+                sb.AppendLine(EscapeMarkdown(topic.Summary));
+            }
+
+            if (!string.IsNullOrWhiteSpace(topic.Url))
+            {
+                sb.AppendLine($"[Читать далее]({topic.Url})");
+            }
+
+            sb.AppendLine($"_Упоминаний в СМИ: {topic.SourceCount}_");
+            sb.AppendLine($"_{topic.Source} \u2022 {topic.PublishedAt:dd.MM.yyyy}_");
+
+            return sb.ToString();
+        }
+
         private string FormatDigestMessage(List<NewsTopicDb> topics, string header = null)
         {
             var sb = new StringBuilder();

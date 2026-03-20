@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NewsService.DB;
 
@@ -10,9 +11,11 @@ using NewsService.DB;
 namespace NewsService.Migrations
 {
     [DbContext(typeof(NewsDataDb))]
-    partial class NewsDataDbModelSnapshot : ModelSnapshot
+    [Migration("20260319151630_AddSourceCount")]
+    partial class AddSourceCount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");

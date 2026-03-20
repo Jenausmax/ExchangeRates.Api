@@ -17,6 +17,7 @@ namespace NewsService.DB
                 entity.HasIndex(e => e.ContentHash).IsUnique();
                 entity.HasIndex(e => e.IsSent);
                 entity.HasIndex(e => e.PublishedAt);
+                entity.HasIndex(e => e.SourceCount);
             });
 
             modelBuilder.Entity<NewsItemDb>(entity =>

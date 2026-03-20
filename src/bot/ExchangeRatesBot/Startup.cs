@@ -55,6 +55,12 @@ namespace ExchangeRatesBot
                 services.AddHostedService<JobsSendNewsDigest>();
             }
 
+            // Условная регистрация рассылки важных новостей
+            if (botConfig.ImportantNewsEnabled)
+            {
+                services.AddHostedService<JobsSendImportantNews>();
+            }
+
             services.AddControllers().AddNewtonsoftJson();
         }
 

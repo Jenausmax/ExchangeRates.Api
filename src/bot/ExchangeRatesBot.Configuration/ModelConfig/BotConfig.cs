@@ -29,5 +29,10 @@
         /// Время рассылки новостного дайджеста (формат HH:mm)
         /// </summary>
         public string NewsTime { get; set; } = "09:00";
+
+        /// <summary>
+        /// Включить рассылку важных новостей (раз в час)
+        /// </summary>
+        public bool ImportantNewsEnabled { get; set; } = false;
     }
 }

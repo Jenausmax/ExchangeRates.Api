@@ -167,5 +167,39 @@ namespace ExchangeRatesBot.App.Services
             }
             return Array.Empty<string>();
         }
+
+        /// <summary>
+        /// Обновить подписку пользователя на важные новости
+        /// </summary>
+        public async Task<bool> ImportantNewsSubscribeUpdate(long chatId, bool subscribe, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.ImportantNewsSubscribe = subscribe;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Обновить время последней доставки важных новостей пользователю
+        /// </summary>
+        public async Task<bool> UpdateLastImportantNewsAt(long chatId, DateTime deliveredAt, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.LastImportantNewsAt = deliveredAt;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
     }
 }

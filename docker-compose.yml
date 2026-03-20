@@ -54,6 +54,7 @@ services:
       - BotConfig__NewsServiceUrl=http://exchangerates-news:80/
       - BotConfig__NewsEnabled=${NEWS_ENABLED:-false}
       - BotConfig__NewsTime=${NEWS_TIME:-09:00}
+      - BotConfig__ImportantNewsEnabled=${IMPORTANT_NEWS_ENABLED:-false}
     volumes:
       # ОТДЕЛЬНЫЕ volumes от API
       - ./bot-data:/app/data

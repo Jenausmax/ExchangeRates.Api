@@ -50,5 +50,15 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Получить персональное расписание новостей пользователя (синхронный, работает с CurrentUser)
         /// </summary>
         string[] GetUserNewsTimes(long chatId);
+
+        /// <summary>
+        /// Обновить подписку пользователя на важные новости
+        /// </summary>
+        Task<bool> ImportantNewsSubscribeUpdate(long chatId, bool subscribe, CancellationToken cancel);
+
+        /// <summary>
+        /// Обновить время последней доставки важных новостей пользователю
+        /// </summary>
+        Task<bool> UpdateLastImportantNewsAt(long chatId, DateTime deliveredAt, CancellationToken cancel);
     }
 }

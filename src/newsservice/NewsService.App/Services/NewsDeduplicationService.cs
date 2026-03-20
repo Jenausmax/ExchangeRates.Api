@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using NewsService.App.Helpers;
+using NewsService.Configuration;
 using NewsService.Domain.Interfaces;
 using NewsService.Domain.Models;
 using Serilog;
@@ -13,12 +15,14 @@ namespace NewsService.App.Services
     {
         private readonly INewsRepository _repository;
         private readonly ILlmService _llmService;
+        private readonly double _similarityThreshold;
         private readonly ILogger _logger;
 
-        public NewsDeduplicationService(INewsRepository repository, ILlmService llmService, ILogger logger)
+        public NewsDeduplicationService(INewsRepository repository, ILlmService llmService, IOptions<NewsConfig> config, ILogger logger)
         {
             _repository = repository;
             _llmService = llmService;
+            _similarityThreshold = config.Value.SimilarityThreshold;
             _logger = logger;
         }
 
@@ -36,6 +40,48 @@ namespace NewsService.App.Services
                     if (await _repository.ExistsByHashAsync(hash, cancel))
                     {
                         _logger.Debug("Duplicate skipped: {Title}", normalizedTitle);
+                        continue;
+                    }
+
+                    // Проверка на похожие новости (Jaccard similarity)
+                    var recentTopics = await _repository.GetRecentTopicsForSimilarityAsync(48, cancel);
+                    var normalizedForSim = NewsNormalizationHelper.NormalizeTitleForSimilarity(item.Title);
+                    var itemGrams = NewsNormalizationHelper.GetCharNGrams(normalizedForSim);
+
+                    NewsTopicDb matchedTopic = null;
+                    double maxSimilarity = 0;
+
+                    foreach (var existing in recentTopics)
+                    {
+                        var existingNorm = NewsNormalizationHelper.NormalizeTitleForSimilarity(existing.Title);
+                        var existingGrams = NewsNormalizationHelper.GetCharNGrams(existingNorm);
+                        var similarity = NewsNormalizationHelper.JaccardSimilarity(itemGrams, existingGrams);
+
+                        if (similarity > maxSimilarity)
+                        {
+                            maxSimilarity = similarity;
+                            matchedTopic = existing;
+                        }
+                    }
+
+                    if (maxSimilarity >= _similarityThreshold && matchedTopic != null)
+                    {
+                        _logger.Information("Similar topic found (Jaccard={Similarity:F2}): '{New}' ≈ '{Existing}'",
+                            maxSimilarity, normalizedTitle, matchedTopic.Title);
+
+                        await _repository.IncrementSourceCountAsync(matchedTopic.Id, cancel);
+
+                        var similarNewsItem = new NewsItemDb
+                        {
+                            TopicId = matchedTopic.Id,
+                            RawTitle = item.Title,
+                            RawDescription = item.Description,
+                            RawUrl = item.Url,
+                            RawPublishedAt = item.PublishedAt,
+                            SourceFeed = item.SourceFeed
+                        };
+                        await _repository.CreateItemAsync(similarNewsItem, cancel);
+
                         continue;
                     }
 
