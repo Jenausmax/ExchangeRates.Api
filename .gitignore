@@ -363,6 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 # Claude Code settings
 .claude/
+.agents/
+skills-lock.json
 
 # Data and logs directories
 data/
