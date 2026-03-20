@@ -7,8 +7,8 @@
 #  Требования: Bash 4.0+, Git, Docker 20.10+, Docker Compose 1.29+
 #
 #  Автор: Software Architect Agent
-#  Версия: 1.0
-#  Дата: 2026-03-13
+#  Версия: 2.0
+#  Дата: 2026-03-20
 #==================================================================================================
 
 #--------------------------------------------------------------------------------------------------
@@ -73,6 +73,8 @@ readonly ICON_ARROW="→"
 readonly DEFAULT_TIME_ONE="14:05"
 readonly DEFAULT_TIME_TWO="15:32"
 readonly DEFAULT_MODE="polling"
+readonly DEFAULT_NEWS_TIME="09:00"
+readonly DEFAULT_OLLAMA_URL="http://localhost:11434"
 
 #--------------------------------------------------------------------------------------------------
 #  Глобальные переменные
@@ -83,6 +85,12 @@ BOT_WEBHOOK=""
 TIME_ONE=""
 TIME_TWO=""
 BRANCH=""
+NEWS_ENABLED="false"
+NEWS_TIME=""
+IMPORTANT_NEWS_ENABLED="false"
+LLM_PROVIDER=""
+POLZA_API_KEY=""
+OLLAMA_URL=""
 
 #==================================================================================================
 #  Функции логирования
@@ -382,6 +390,114 @@ prompt_branch() {
     done
 }
 
+prompt_news() {
+    echo ""
+    print_info "Настройка новостного дайджеста"
+    echo ""
+
+    if prompt_yes_no "Включить новостной дайджест (RSS ЦБ РФ)?" "N"; then
+        NEWS_ENABLED="true"
+
+        read -p "  Время рассылки новостей [${DEFAULT_NEWS_TIME}]: " news_time
+        NEWS_TIME="${news_time:-$DEFAULT_NEWS_TIME}"
+
+        print_success "Новостной дайджест включён, время: ${NEWS_TIME}"
+
+        # Важные новости
+        echo ""
+        print_info "Важные новости — автоматическая рассылка самых цитируемых новостей раз в час"
+        if prompt_yes_no "Включить рассылку важных новостей?" "N"; then
+            IMPORTANT_NEWS_ENABLED="true"
+            print_success "Важные новости включены"
+        else
+            IMPORTANT_NEWS_ENABLED="false"
+            print_success "Важные новости отключены"
+        fi
+    else
+        NEWS_ENABLED="false"
+        IMPORTANT_NEWS_ENABLED="false"
+        NEWS_TIME="${DEFAULT_NEWS_TIME}"
+        print_success "Новостной дайджест отключён"
+    fi
+}
+
+prompt_llm_provider() {
+    echo ""
+    print_info "Настройка LLM-провайдера для суммаризации новостей"
+    echo ""
+    print_info "LLM используется для создания кратких сводок из RSS-новостей ЦБ РФ."
+    print_info "Без LLM новости будут показаны как есть (заголовок + ссылка)."
+    echo ""
+    echo "    1) Отключён (без суммаризации)"
+    echo "    2) Polza (облачный, требует API-ключ)"
+    echo "    3) Ollama (локальный, требует запущенный сервер)"
+    echo ""
+
+    while true; do
+        read -p "  Ваш выбор [1]: " llm_choice
+        llm_choice=${llm_choice:-1}
+
+        case $llm_choice in
+            1)
+                LLM_PROVIDER=""
+                print_success "LLM-провайдер: отключён"
+                return 0
+                ;;
+            2)
+                LLM_PROVIDER="polza"
+                print_success "LLM-провайдер: Polza"
+                echo ""
+                prompt_polza_key
+                return 0
+                ;;
+            3)
+                LLM_PROVIDER="ollama"
+                print_success "LLM-провайдер: Ollama"
+                echo ""
+                prompt_ollama_url
+                return 0
+                ;;
+            *)
+                print_warning "Пожалуйста, введите 1, 2 или 3"
+                ;;
+        esac
+    done
+}
+
+prompt_polza_key() {
+    print_info "Введите API-ключ Polza"
+    echo ""
+
+    while true; do
+        read -p "  API-ключ: " polza_key
+
+        if [ -z "$polza_key" ]; then
+            print_warning "API-ключ не может быть пустым"
+            if prompt_yes_no "Отключить LLM-провайдер?" "Y"; then
+                LLM_PROVIDER=""
+                print_success "LLM-провайдер отключён"
+                return 0
+            fi
+            continue
+        fi
+
+        POLZA_API_KEY="$polza_key"
+        local masked_key="${polza_key:0:4}$(echo "${polza_key:4}" | sed 's/./x/g')"
+        print_success "API-ключ принят: ${masked_key}"
+        return 0
+    done
+}
+
+prompt_ollama_url() {
+    print_info "Введите URL Ollama сервера"
+    echo ""
+
+    read -p "  URL Ollama [${DEFAULT_OLLAMA_URL}]: " ollama_url
+    OLLAMA_URL="${ollama_url:-$DEFAULT_OLLAMA_URL}"
+
+    print_success "Ollama URL: ${OLLAMA_URL}"
+}
+
 #==================================================================================================
 #  Функции работы с репозиторием
 #==================================================================================================
@@ -564,6 +680,25 @@ BOT_WEBHOOK=${BOT_WEBHOOK}
 # Время рассылки сообщений подписчикам
 BOT_TIME_ONE=${TIME_ONE}
 BOT_TIME_TWO=${TIME_TWO}
+
+# --- Новостной сервис ---
+# Включить новостной дайджест (true/false)
+NEWS_ENABLED=${NEWS_ENABLED}
+
+# Время рассылки новостного дайджеста
+NEWS_TIME=${NEWS_TIME}
+
+# LLM провайдер для суммаризации новостей: "" (отключен), "polza", "ollama"
+LLM_PROVIDER=${LLM_PROVIDER}
+
+# API ключ для Polza LLM (если LLM_PROVIDER=polza)
+POLZA_API_KEY=${POLZA_API_KEY}
+
+# URL Ollama сервера (если LLM_PROVIDER=ollama)
+OLLAMA_URL=${OLLAMA_URL:-${DEFAULT_OLLAMA_URL}}
+
+# Включить рассылку важных новостей раз в час (true/false)
+IMPORTANT_NEWS_ENABLED=${IMPORTANT_NEWS_ENABLED}
 EOF
 
     print_success "Файл $ENV_FILE создан"
@@ -773,6 +908,14 @@ main() {
     # Запрос времени рассылки
     prompt_time
 
+    # Запрос настроек новостей
+    prompt_news
+
+    # Запрос LLM-провайдера (если новости включены)
+    if [ "$NEWS_ENABLED" = "true" ]; then
+        prompt_llm_provider
+    fi
+
     # Шаг 5: Создание файла конфигурации
     print_step "5/7" " Создание файла конфигурации..."
     if ! create_env_file; then
@@ -814,6 +957,9 @@ main() {
     echo "  1. Найдите бота в Telegram"
     echo "  2. Отправьте команду /start"
     echo "  3. Проверьте работоспособность: /valuteoneday"
+    if [ "$NEWS_ENABLED" = "true" ]; then
+        echo "  4. Настройте подписку на новости: /news"
+    fi
     echo ""
     print_info "Управление:"
     echo "  docker-compose logs -f          - просмотр логов"
@@ -821,7 +967,15 @@ main() {
     echo "  docker-compose down             - остановка сервисов"
     echo "  docker-compose up -d --build    - пересборка и запуск"
     echo ""
-    print_info "API доступен по адресу: http://localhost:5000"
+    print_info "Сервисы:"
+    echo "  API:          http://localhost:5000"
+    echo "  NewsService:  http://localhost:5002"
+    if [ "$NEWS_ENABLED" = "true" ]; then
+        echo "  Новости:      включены (LLM: ${LLM_PROVIDER:-отключён})"
+    fi
+    if [ "$IMPORTANT_NEWS_ENABLED" = "true" ]; then
+        echo "  Важные:       включены (раз в час)"
+    fi
     echo ""
 
     return 0
