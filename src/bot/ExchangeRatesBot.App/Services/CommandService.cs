@@ -148,46 +148,77 @@ namespace ExchangeRatesBot.App.Services
                     await HandleSaveCurrencies(update, chatId);
                     break;
 
-                case "Подписаться":
-                    await _userControl.SubscribeUpdate(_userControl.CurrentUser.ChatId, true, CancellationToken.None);
-                    await _updateService.EchoTextMessageAsync(
-                        update,
-                        BotPhrases.SubscribeTrue,
-                        default);
-                    break;
-
-                case "Отписаться":
-                    await _userControl.SubscribeUpdate(_userControl.CurrentUser.ChatId, false, CancellationToken.None);
-                    await _updateService.EchoTextMessageAsync(
-                        update,
-                        BotPhrases.SubscribeFalse,
-                        default);
-                    break;
-
-                case "news_subscribe":
+                // --- Меню подписок: toggle курсов валют ---
+                case "sub_toggle_rates":
                     {
-                        var currentNewsTimes = _userControl.CurrentUser?.NewsTimes;
-                        if (!string.IsNullOrEmpty(currentNewsTimes))
+                        var currentRates = _userControl.CurrentUser?.Subscribe == true;
+                        await _userControl.SubscribeUpdate(chatId, !currentRates, CancellationToken.None);
+                        await _userControl.SetUser(chatId); // обновить CurrentUser
+                        await _botService.Client.EditMessageReplyMarkupAsync(
+                            chatId: update.CallbackQuery.Message.Chat.Id,
+                            messageId: update.CallbackQuery.Message.MessageId,
+                            replyMarkup: new InlineKeyboardMarkup(SubscriptionMenu()));
+                        await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id,
+                            currentRates ? "Подписка на курсы отменена" : "Подписка на курсы оформлена");
+                        break;
+                    }
+
+                // --- Меню подписок: toggle важных новостей ---
+                case "sub_toggle_important":
+                    {
+                        var currentImportant = _userControl.CurrentUser?.ImportantNewsSubscribe == true;
+                        await _userControl.ImportantNewsSubscribeUpdate(chatId, !currentImportant, CancellationToken.None);
+                        await _userControl.SetUser(chatId); // обновить CurrentUser
+                        await _botService.Client.EditMessageReplyMarkupAsync(
+                            chatId: update.CallbackQuery.Message.Chat.Id,
+                            messageId: update.CallbackQuery.Message.MessageId,
+                            replyMarkup: new InlineKeyboardMarkup(SubscriptionMenu()));
+                        await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id,
+                            currentImportant ? "Подписка на важные новости отменена" : "Подписка на важные новости оформлена");
+                        break;
+                    }
+
+                // --- Меню подписок: открыть подменю новостного дайджеста ---
+                case "sub_news_menu":
+                    await _botService.Client.EditMessageTextAsync(
+                        chatId: update.CallbackQuery.Message.Chat.Id,
+                        messageId: update.CallbackQuery.Message.MessageId,
+                        text: BotPhrases.NewsDigestMenuHeader,
+                        replyMarkup: new InlineKeyboardMarkup(NewsSubscriptionMenu()));
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
+                // --- Подменю дайджеста: toggle подписки ---
+                case "sub_news_toggle":
+                    {
+                        var currentNews = _userControl.CurrentUser?.NewsSubscribe == true;
+                        if (currentNews)
                         {
-                            await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsAlreadySubscribed, default);
+                            await _userControl.UpdateNewsTimes(chatId, null, CancellationToken.None);
+                            await _userControl.NewsSubscribeUpdate(chatId, false, CancellationToken.None);
                         }
                         else
                         {
                             await _userControl.UpdateNewsTimes(chatId, "09:00", CancellationToken.None);
                             await _userControl.NewsSubscribeUpdate(chatId, true, CancellationToken.None);
-                            await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsSubscribeTrueSchedule, default);
                         }
-                        await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                        await _userControl.SetUser(chatId); // обновить CurrentUser
+                        await _botService.Client.EditMessageReplyMarkupAsync(
+                            chatId: update.CallbackQuery.Message.Chat.Id,
+                            messageId: update.CallbackQuery.Message.MessageId,
+                            replyMarkup: new InlineKeyboardMarkup(NewsSubscriptionMenu()));
+                        await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id,
+                            currentNews ? "Подписка на новости отменена" : "Подписка на новости оформлена (09:00)");
                         break;
                     }
 
-                case "news_unsubscribe":
-                    await _userControl.UpdateNewsTimes(chatId, null, CancellationToken.None);
-                    await _userControl.NewsSubscribeUpdate(chatId, false, CancellationToken.None);
-                    await _updateService.EchoTextMessageAsync(
-                        update,
-                        BotPhrases.NewsSubscribeFalse,
-                        default);
+                // --- Подменю дайджеста: назад в главное меню подписок ---
+                case "sub_back":
+                    await _botService.Client.EditMessageTextAsync(
+                        chatId: update.CallbackQuery.Message.Chat.Id,
+                        messageId: update.CallbackQuery.Message.MessageId,
+                        text: BotPhrases.SubscriptionMenuHeader,
+                        replyMarkup: new InlineKeyboardMarkup(SubscriptionMenu()));
                     await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
                     break;
 
@@ -229,15 +260,17 @@ namespace ExchangeRatesBot.App.Services
                     await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
                     break;
 
+                // old callbacks kept for backward compatibility (no-op, redirect to new menu)
                 case "important_news_subscribe":
-                    await _userControl.ImportantNewsSubscribeUpdate(chatId, true, CancellationToken.None);
-                    await _updateService.EchoTextMessageAsync(update, BotPhrases.ImportantNewsSubscribeTrue, default);
-                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
-                    break;
-
                 case "important_news_unsubscribe":
-                    await _userControl.ImportantNewsSubscribeUpdate(chatId, false, CancellationToken.None);
-                    await _updateService.EchoTextMessageAsync(update, BotPhrases.ImportantNewsSubscribeFalse, default);
+                case "news_subscribe":
+                case "news_unsubscribe":
+                case "Подписаться":
+                case "Отписаться":
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.SubscriptionMenuHeader,
+                        new InlineKeyboardMarkup(SubscriptionMenu()));
                     await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
                     break;
             }
@@ -288,8 +321,8 @@ namespace ExchangeRatesBot.App.Services
                 case var txt when txt == BotPhrases.BtnSubscribe:
                     await _updateService.EchoTextMessageAsync(
                         update,
-                        BotPhrases.StartMenu,
-                        new InlineKeyboardMarkup(Menu()));
+                        BotPhrases.SubscriptionMenuHeader,
+                        new InlineKeyboardMarkup(SubscriptionMenu()));
                     break;
 
                 // --- Команда /valutesevendays и кнопка "За 7 дней" ---
@@ -321,14 +354,30 @@ namespace ExchangeRatesBot.App.Services
                         new InlineKeyboardMarkup(PeriodSelectionKeyboard()));
                     break;
 
-                // --- Команда /news и кнопка "Новости" ---
+                // --- Команда /news и кнопка "Новости" — сразу лента новостей ---
                 case "/news":
                 case var txt when txt == BotPhrases.BtnNews:
-                    await _updateService.EchoTextMessageAsync(
-                        update,
-                        BotPhrases.NewsHeader,
-                        new InlineKeyboardMarkup(NewsMenu()));
-                    break;
+                    {
+                        var newsDigest = await _newsClient.GetLatestDigestAsync(5, CancellationToken.None);
+                        if (string.IsNullOrWhiteSpace(newsDigest?.Message))
+                        {
+                            await _updateService.EchoTextMessageAsync(update, BotPhrases.NewsEmpty, default);
+                        }
+                        else
+                        {
+                            var newsReplyMarkup = newsDigest.HasMore && newsDigest.TopicIds?.Count > 0
+                                ? new InlineKeyboardMarkup(new List<List<InlineKeyboardButton>>
+                                {
+                                    new List<InlineKeyboardButton>
+                                    {
+                                        InlineKeyboardButton.WithCallbackData(BotPhrases.BtnNewsMore, $"news_p_{newsDigest.TopicIds.Last()}")
+                                    }
+                                })
+                                : null;
+                            await _updateService.EchoTextMessageAsync(update, newsDigest.Message, newsReplyMarkup);
+                        }
+                        break;
+                    }
 
                 default:
                     await _updateService.EchoTextMessageAsync(
@@ -339,12 +388,55 @@ namespace ExchangeRatesBot.App.Services
             }
         }
 
-        private List<InlineKeyboardButton> Menu()
+        /// <summary>
+        /// Главное меню подписок с актуальным статусом.
+        /// </summary>
+        private List<List<InlineKeyboardButton>> SubscriptionMenu()
         {
-            var buttons = new List<InlineKeyboardButton>();
-            buttons.Add(InlineKeyboardButton.WithCallbackData("Подписаться"));
-            buttons.Add(InlineKeyboardButton.WithCallbackData("Отписаться"));
-            return buttons;
+            var user = _userControl.CurrentUser;
+            var ratesStatus = user?.Subscribe == true ? "\u2705" : "\u274C";
+            var importantStatus = user?.ImportantNewsSubscribe == true ? "\u2705" : "\u274C";
+
+            return new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData($"{ratesStatus} Курсы валют", "sub_toggle_rates")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("Новостной дайджест \u25B6", "sub_news_menu")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData($"{importantStatus} Важные новости", "sub_toggle_important")
+                }
+            };
+        }
+
+        /// <summary>
+        /// Подменю новостного дайджеста с toggle и расписанием.
+        /// </summary>
+        private List<List<InlineKeyboardButton>> NewsSubscriptionMenu()
+        {
+            var user = _userControl.CurrentUser;
+            var newsStatus = user?.NewsSubscribe == true ? "\u2705" : "\u274C";
+
+            return new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData($"{newsStatus} Подписка", "sub_news_toggle")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("Настроить расписание", "news_schedule")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData("\u2190 Назад", "sub_back")
+                }
+            };
         }
 
         /// <summary>
@@ -473,33 +565,6 @@ namespace ExchangeRatesBot.App.Services
             };
         }
 
-        /// <summary>
-        /// Генерация inline-клавиатуры меню новостного дайджеста.
-        /// </summary>
-        private static List<List<InlineKeyboardButton>> NewsMenu()
-        {
-            return new List<List<InlineKeyboardButton>>
-            {
-                new List<InlineKeyboardButton>
-                {
-                    InlineKeyboardButton.WithCallbackData("Последние новости", "news_latest")
-                },
-                new List<InlineKeyboardButton>
-                {
-                    InlineKeyboardButton.WithCallbackData("Настроить расписание", "news_schedule")
-                },
-                new List<InlineKeyboardButton>
-                {
-                    InlineKeyboardButton.WithCallbackData("Важные новости: вкл", "important_news_subscribe"),
-                    InlineKeyboardButton.WithCallbackData("Важные новости: выкл", "important_news_unsubscribe")
-                },
-                new List<InlineKeyboardButton>
-                {
-                    InlineKeyboardButton.WithCallbackData("Подписаться", "news_subscribe"),
-                    InlineKeyboardButton.WithCallbackData("Отписаться", "news_unsubscribe")
-                }
-            };
-        }
 
         private async Task HandleNewsPage(Update update, int beforeId)
         {

@@ -3,7 +3,7 @@
     public static class BotPhrases
     {
         // --- Существующие фразы (без изменений) ---
-        public static string StartMenu { get; } = "Доброго времени суток! *Подписка* - получать курсы валют ЦБ РФ на USD, EUR, CNY, GBP, JPY за последние 7 дней.";
+        public static string StartMenu { get; } = "Доброго времени суток! Используйте кнопки меню для навигации.";
         public static string SubscribeTrue { get; } = "*Подписка оформлена!* Вы будете получать сообщения 2 раза в сутки. Спасибо!";
         public static string SubscribeFalse { get; } = "*Подписка отменена!* Мне очень жаль что вы отписались :((.";
         public static string Error { get; } = "Не правильный запрос. Попробуйте воспользоваться меню снизу.";
@@ -59,8 +59,8 @@
             "За 7 дней -- изменения курсов за последние 7 дней\n\r" +
             "Статистика -- детальная статистика за период (3-30 дней)\n\r" +
             "Валюты -- выбор валют для отслеживания\n\r" +
-            "Подписка -- подписаться/отписаться от рассылки курсов\n\r" +
-            "Новости -- новостной дайджест и подписка на новости\n\r" +
+            "Подписка -- управление всеми подписками\n\r" +
+            "Новости -- лента последних новостей\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
             "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /help";
 
@@ -119,5 +119,10 @@
         public static string ImportantNewsSubscribeTrue { get; } = "*Подписка на важные новости оформлена!* Вы будете получать самую обсуждаемую новость каждый час.";
         public static string ImportantNewsSubscribeFalse { get; } = "*Подписка на важные новости отменена.*";
         public static string ImportantNewsAlreadySubscribed { get; } = "Вы уже подписаны на важные новости.";
+
+        // --- Меню подписок ---
+
+        public static string SubscriptionMenuHeader { get; } = "Управление подписками:";
+        public static string NewsDigestMenuHeader { get; } = "Новостной дайджест:";
     }
 }

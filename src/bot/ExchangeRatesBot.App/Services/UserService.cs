@@ -32,8 +32,11 @@ namespace ExchangeRatesBot.App.Services
                 CurrentUser.Id = userGetCollection.Id;
                 CurrentUser.ChatId = userGetCollection.ChatId;
                 CurrentUser.NickName = userGetCollection.NickName;
+                CurrentUser.Subscribe = userGetCollection.Subscribe;
                 CurrentUser.Currencies = userGetCollection.Currencies;
+                CurrentUser.NewsSubscribe = userGetCollection.NewsSubscribe;
                 CurrentUser.NewsTimes = userGetCollection.NewsTimes;
+                CurrentUser.ImportantNewsSubscribe = userGetCollection.ImportantNewsSubscribe;
                 await _userDb.Update(userGetCollection, cancel);
                 return true;
             }
