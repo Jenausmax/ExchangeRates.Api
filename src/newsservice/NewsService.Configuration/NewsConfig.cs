@@ -7,6 +7,7 @@ namespace NewsService.Configuration
         public double SimilarityThreshold { get; set; } = 0.5;
         public string SendTime { get; set; } = "09:00";
         public int MaxNewsPerDigest { get; set; } = 5;
+        public int ImportantNewsMaxAgeHours { get; set; } = 2;
         public string[] RssFeeds { get; set; } = new[]
         {
             "https://www.cbr.ru/rss/RssPress",

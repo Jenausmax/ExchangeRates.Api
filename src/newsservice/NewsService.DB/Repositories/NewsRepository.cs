@@ -122,10 +122,17 @@ namespace NewsService.DB.Repositories
                 .ToListAsync(cancel);
         }
 
-        public async Task<NewsTopicDb> GetMostImportantUnsentAsync(CancellationToken cancel = default)
+        public async Task<NewsTopicDb> GetMostImportantUnsentAsync(int maxAgeHours = 0, CancellationToken cancel = default)
         {
-            return await _db.Topics
-                .Where(t => !t.IsSent)
+            var query = _db.Topics.Where(t => !t.IsSent);
+
+            if (maxAgeHours > 0)
+            {
+                var cutoff = DateTime.UtcNow.AddHours(-maxAgeHours);
+                query = query.Where(t => t.FetchedAt >= cutoff);
+            }
+
+            return await query
                 .OrderByDescending(t => t.SourceCount)
                 .ThenByDescending(t => t.PublishedAt)
                 .FirstOrDefaultAsync(cancel);

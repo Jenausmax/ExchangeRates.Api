@@ -81,6 +81,8 @@ namespace ExchangeRatesBot.Maintenance.Jobs
             if (sentCount > 0)
             {
                 _logger.Information("Important news sent to {Count} users", sentCount);
+                await newsClient.MarkSentAsync(digest.TopicIds, cancel);
+                _logger.Information("Marked {Count} topics as sent", digest.TopicIds.Count);
             }
         }
     }

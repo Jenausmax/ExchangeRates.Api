@@ -135,7 +135,7 @@ namespace NewsService.App.Services
 
         public async Task<DigestResponse> GetMostImportantAsync(CancellationToken cancel = default)
         {
-            var topic = await _repository.GetMostImportantUnsentAsync(cancel);
+            var topic = await _repository.GetMostImportantUnsentAsync(_config.ImportantNewsMaxAgeHours, cancel);
             if (topic == null)
             {
                 return new DigestResponse
