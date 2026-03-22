@@ -7,8 +7,8 @@
 #  Требования: Bash 4.0+, Git, Docker 20.10+, Docker Compose 1.29+
 #
 #  Автор: Software Architect Agent
-#  Версия: 2.0
-#  Дата: 2026-03-20
+#  Версия: 3.0
+#  Дата: 2026-03-22
 #==================================================================================================
 
 #--------------------------------------------------------------------------------------------------
@@ -517,125 +517,252 @@ check_existing_project() {
 }
 
 clone_or_update_repo() {
-    local operation="клонирование"
     local current_dir=$(pwd)
 
     if check_existing_project; then
-        operation="обновление"
+        # === Сценарий Б: запуск ВНУТРИ проекта ===
+        print_info "Обнаружен существующий проект: ${PROJECT_NAME}"
+        echo ""
+        print_info "Что вы хотите сделать?"
+        echo "    1) Обновить — pull изменений по выбранной ветке"
+        echo "    2) Переустановить — удалить и склонировать заново"
+        echo "    3) Продолжить без обновления (только пересобрать Docker)"
+        echo "    4) Отменить"
+        echo ""
 
-        # Проверяем наличие незафиксированных изменений
-        if ! git diff-index --quiet HEAD --; then
-            print_warning "Обнаружены незафиксированные изменения в репозитории"
-            if ! prompt_yes_no "Продолжить обновление? Несохраненные изменения могут быть потеряны"; then
-                print_error "Обновление отменено"
-                return 1
-            fi
-        fi
+        while true; do
+            read -p "  Ваш выбор [1]: " update_choice
+            update_choice=${update_choice:-1}
 
-        print_info "Обновление ветки '${BRANCH}'..."
-        if ! git checkout "$BRANCH" 2>/dev/null; then
-            print_error "Ветка '${BRANCH}' не существует"
-            return 1
-        fi
-
-        if ! git pull origin "$BRANCH"; then
-            print_error "Не удалось обновить репозиторий"
-            return 1
-        fi
-    else
-        print_info "Клонирование репозитория (${BRANCH})..."
-
-        if [ -n "$(ls -A)" ]; then
-            # Проверяем, существует ли уже папка проекта
-            if [ -d "$PROJECT_NAME" ]; then
-                print_warning "Текущая папка не пуста"
-                print_warning "Папка '${PROJECT_NAME}' уже существует"
-
-                echo ""
-                print_info "Что вы хотите сделать?"
-                echo "    1) Использовать существующую папку '${PROJECT_NAME}'"
-                echo "    2) Отменить операцию"
-                echo ""
-
-                while true; do
-                    read -p "  Ваш выбор [2]: " use_existing
-                    use_existing=${use_existing:-2}
-
-                    case $use_existing in
-                        1)
-                            # Переходим в существующую папку
-                            print_info "Переход в папку '${PROJECT_NAME}'..."
-                            cd "$PROJECT_NAME"
-
-                            # Проверяем, что это действительно проект
-                            if ! check_existing_project; then
-                                print_error "Папка '${PROJECT_NAME}' не содержит проект ExchangeRates.Api"
-                                return 1
-                            fi
-
-                            # Считываем существующий токен
-                            if [ -f "$ENV_FILE" ]; then
-                                BOT_TOKEN=$(grep "^BOT_TOKEN=" "$ENV_FILE" | cut -d'=' -f2)
-                                if [ -z "$BOT_TOKEN" ] || [ "$BOT_TOKEN" = "YOUR_BOT_TOKEN_HERE" ]; then
-                                    BOT_TOKEN=""
-                                fi
-                            fi
-
-                            operation="обновление"
-                            # Обновляем существующий проект
-                            print_info "Обновление ветки '${BRANCH}'..."
-                            if ! git checkout "$BRANCH" 2>/dev/null; then
-                                print_error "Ветка '${BRANCH}' не существует"
-                                return 1
-                            fi
-
-                            if ! git pull origin "$BRANCH"; then
-                                print_error "Не удалось обновить репозиторий"
-                                return 1
-                            fi
-
-                            return 0
-                            ;;
-                        2|"")
-                            print_error "Операция отменена"
+            case $update_choice in
+                1)
+                    # Обновление через git pull
+                    if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+                        print_warning "Обнаружены незафиксированные изменения"
+                        if ! prompt_yes_no "Продолжить? Несохраненные изменения могут быть потеряны"; then
                             return 1
-                            ;;
-                        *)
-                            print_warning "Пожалуйста, введите 1 или 2"
-                            ;;
-                    esac
-                done
-            else
-                # Папка не существует, спрашиваем создать ли её
-                print_warning "Текущая папка не пуста"
-                echo ""
-                print_info "Создастся отдельная папка '${PROJECT_NAME}' для проекта"
-                if ! prompt_yes_no "Продолжить?"; then
+                        fi
+                    fi
+
+                    print_info "Обновление ветки '${BRANCH}'..."
+                    if ! git checkout "$BRANCH" 2>/dev/null; then
+                        print_error "Ветка '${BRANCH}' не существует"
+                        return 1
+                    fi
+
+                    if ! git pull origin "$BRANCH"; then
+                        print_error "Не удалось обновить репозиторий"
+                        return 1
+                    fi
+
+                    # Миграция старых volumes
+                    migrate_old_volumes
+
+                    print_success "Обновление завершено"
+                    return 0
+                    ;;
+                2)
+                    # Переустановка
+                    print_warning "Проект будет удалён и склонирован заново!"
+                    print_info "Данные (.env и базы данных) будут сохранены в бэкап."
+                    echo ""
+                    if ! prompt_yes_no "Вы уверены?"; then
+                        return 1
+                    fi
+
+                    # Бэкап
+                    local backup_dir
+                    backup_dir=$(backup_project_data)
+                    # backup_project_data выводит echo с именем папки — нужно сохранить только последнюю строку
+                    backup_dir=$(echo "$backup_dir" | tail -1)
+
+                    # Перемещаем бэкап за пределы проекта
+                    local abs_backup="../$backup_dir"
+                    mv "$backup_dir" "$abs_backup"
+
+                    # Удаление и клонирование
+                    cd ..
+                    print_info "Удаление проекта..."
+                    rm -rf "$PROJECT_NAME"
+
+                    print_info "Клонирование репозитория (${BRANCH})..."
+                    if ! git clone -b "$BRANCH" "$GITHUB_REPO" "$PROJECT_NAME"; then
+                        print_error "Не удалось клонировать репозиторий"
+                        # Возвращаем бэкап
+                        mv "$abs_backup" "./$backup_dir"
+                        return 1
+                    fi
+
+                    cd "$PROJECT_NAME"
+
+                    # Восстановление данных
+                    mv "$abs_backup" "./$backup_dir"
+                    restore_project_data "$backup_dir"
+
+                    print_success "Переустановка завершена"
+                    print_info "Бэкап сохранён: ./$backup_dir/"
+                    return 0
+                    ;;
+                3)
+                    # Продолжить без обновления
+                    migrate_old_volumes
+                    print_success "Продолжение без обновления"
+                    return 0
+                    ;;
+                4)
                     print_error "Операция отменена"
                     return 1
-                fi
+                    ;;
+                *)
+                    print_warning "Пожалуйста, введите 1, 2, 3 или 4"
+                    ;;
+            esac
+        done
+    else
+        # === Сценарий A: запуск РЯДОМ с папкой или новая установка ===
+        if [ -n "$(ls -A)" ] && [ -d "$PROJECT_NAME" ]; then
+            # Папка ExchangeRates.Api существует
+            print_warning "Папка '${PROJECT_NAME}' уже существует"
+            echo ""
+            print_info "Что вы хотите сделать?"
+            echo "    1) Обновить — pull изменений по выбранной ветке"
+            echo "    2) Переустановить — удалить и склонировать заново"
+            echo "    3) Отменить"
+            echo ""
 
-                # Создаем папку проекта
-                print_info "Создание папки '${PROJECT_NAME}'..."
-                if ! mkdir "$PROJECT_NAME"; then
-                    print_error "Не удалось создать папку '${PROJECT_NAME}'"
-                    return 1
-                fi
+            while true; do
+                read -p "  Ваш выбор [1]: " update_choice
+                update_choice=${update_choice:-1}
 
-                # Переходим в папку проекта
-                cd "$PROJECT_NAME"
+                case $update_choice in
+                    1)
+                        # Обновление
+                        cd "$PROJECT_NAME"
+
+                        if ! check_existing_project; then
+                            print_error "Папка '${PROJECT_NAME}' не содержит проект ExchangeRates.Api"
+                            return 1
+                        fi
+
+                        # Считываем существующий токен
+                        if [ -f "$ENV_FILE" ]; then
+                            BOT_TOKEN=$(grep "^BOT_TOKEN=" "$ENV_FILE" | cut -d'=' -f2)
+                            if [ -z "$BOT_TOKEN" ] || [ "$BOT_TOKEN" = "YOUR_BOT_TOKEN_HERE" ]; then
+                                BOT_TOKEN=""
+                            fi
+                        fi
+
+                        if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+                            print_warning "Обнаружены незафиксированные изменения"
+                            if ! prompt_yes_no "Продолжить? Несохраненные изменения могут быть потеряны"; then
+                                cd "$current_dir"
+                                return 1
+                            fi
+                        fi
+
+                        print_info "Обновление ветки '${BRANCH}'..."
+                        if ! git checkout "$BRANCH" 2>/dev/null; then
+                            print_error "Ветка '${BRANCH}' не существует"
+                            return 1
+                        fi
+
+                        if ! git pull origin "$BRANCH"; then
+                            print_error "Не удалось обновить репозиторий"
+                            return 1
+                        fi
+
+                        migrate_old_volumes
+
+                        print_success "Обновление завершено"
+                        return 0
+                        ;;
+                    2)
+                        # Переустановка
+                        print_warning "Папка '${PROJECT_NAME}' будет удалена и проект склонирован заново!"
+                        print_info "Данные (.env и базы данных) будут сохранены в бэкап."
+                        echo ""
+                        if ! prompt_yes_no "Вы уверены?"; then
+                            return 1
+                        fi
+
+                        # Бэкап (из папки проекта)
+                        cd "$PROJECT_NAME"
+                        local backup_dir
+                        backup_dir=$(backup_project_data)
+                        backup_dir=$(echo "$backup_dir" | tail -1)
+
+                        # Перемещаем бэкап за пределы проекта
+                        mv "$backup_dir" "$current_dir/$backup_dir"
+                        cd "$current_dir"
+
+                        # Удаление
+                        print_info "Удаление папки '${PROJECT_NAME}'..."
+                        rm -rf "$PROJECT_NAME"
+
+                        # Клонирование
+                        print_info "Клонирование репозитория (${BRANCH})..."
+                        if ! git clone -b "$BRANCH" "$GITHUB_REPO" "$PROJECT_NAME"; then
+                            print_error "Не удалось клонировать репозиторий"
+                            return 1
+                        fi
+
+                        cd "$PROJECT_NAME"
+
+                        # Восстановление данных
+                        mv "$current_dir/$backup_dir" "./$backup_dir"
+                        restore_project_data "$backup_dir"
+
+                        # Считываем восстановленный токен
+                        if [ -f "$ENV_FILE" ]; then
+                            BOT_TOKEN=$(grep "^BOT_TOKEN=" "$ENV_FILE" | cut -d'=' -f2)
+                            if [ -z "$BOT_TOKEN" ] || [ "$BOT_TOKEN" = "YOUR_BOT_TOKEN_HERE" ]; then
+                                BOT_TOKEN=""
+                            fi
+                        fi
+
+                        print_success "Переустановка завершена"
+                        print_info "Бэкап сохранён: ./$backup_dir/"
+                        return 0
+                        ;;
+                    3)
+                        print_error "Операция отменена"
+                        return 1
+                        ;;
+                    *)
+                        print_warning "Пожалуйста, введите 1, 2 или 3"
+                        ;;
+                esac
+            done
+        elif [ -n "$(ls -A)" ]; then
+            # Папка не существует, но текущая папка не пуста
+            print_warning "Текущая папка не пуста"
+            echo ""
+            print_info "Создастся отдельная папка '${PROJECT_NAME}' для проекта"
+            if ! prompt_yes_no "Продолжить?"; then
+                print_error "Операция отменена"
+                return 1
             fi
+
+            print_info "Создание папки '${PROJECT_NAME}'..."
+            if ! mkdir "$PROJECT_NAME"; then
+                print_error "Не удалось создать папку '${PROJECT_NAME}'"
+                return 1
+            fi
+
+            cd "$PROJECT_NAME"
         fi
 
+        # Клонирование (для новой установки)
+        print_info "Клонирование репозитория (${BRANCH})..."
         if ! git clone -b "$BRANCH" "$GITHUB_REPO" .; then
             print_error "Не удалось клонировать репозиторий"
             print_info "Проверьте подключение к интернету"
             return 1
         fi
-    fi
 
-    print_success "${operation^} завершено"
-    return 0
+        print_success "Клонирование завершено"
+        return 0
+    fi
 }
 
 #==================================================================================================
@@ -726,6 +853,70 @@ ensure_gitignore() {
         print_success ".env добавлен в .gitignore"
     else
         print_success ".gitignore проверен"
+    fi
+
+    # Проверяем databases
+    if ! grep -q "^databases/" .gitignore 2>/dev/null; then
+        echo "databases/" >> .gitignore
+        print_success "databases/ добавлен в .gitignore"
+    fi
+}
+
+#==================================================================================================
+#  Функции резервного копирования и миграции
+#==================================================================================================
+
+backup_project_data() {
+    local backup_dir="backup_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$backup_dir"
+
+    # Бэкап .env
+    if [ -f "$ENV_FILE" ]; then
+        cp "$ENV_FILE" "$backup_dir/env.bak"
+        print_success "Бэкап .env создан"
+    fi
+
+    # Бэкап баз данных (новая структура)
+    if [ -d "databases" ]; then
+        cp -r databases "$backup_dir/databases"
+        print_success "Бэкап баз данных создан"
+    else
+        # Старая структура
+        mkdir -p "$backup_dir/databases"
+        [ -d "data" ] && cp -r data "$backup_dir/databases/api-data"
+        [ -d "bot-data" ] && cp -r bot-data "$backup_dir/databases/bot-data"
+        [ -d "news-data" ] && cp -r news-data "$backup_dir/databases/news-data"
+        if [ -d "data" ] || [ -d "bot-data" ] || [ -d "news-data" ]; then
+            print_success "Бэкап баз данных (старый формат) создан"
+        fi
+    fi
+
+    echo "$backup_dir"
+}
+
+restore_project_data() {
+    local backup_dir="$1"
+
+    if [ -f "$backup_dir/env.bak" ]; then
+        cp "$backup_dir/env.bak" "$ENV_FILE"
+        print_success ".env восстановлен из бэкапа"
+    fi
+
+    if [ -d "$backup_dir/databases" ]; then
+        mkdir -p databases
+        cp -r "$backup_dir/databases/"* databases/
+        print_success "Базы данных восстановлены из бэкапа"
+    fi
+}
+
+migrate_old_volumes() {
+    if [ -d "data" ] && [ ! -d "databases/api-data" ]; then
+        print_info "Миграция баз данных в новую структуру ./databases/..."
+        mkdir -p databases
+        mv data databases/api-data
+        mv bot-data databases/bot-data 2>/dev/null
+        mv news-data databases/news-data 2>/dev/null
+        print_success "Миграция завершена: ./databases/"
     fi
 }
 
@@ -840,45 +1031,15 @@ main() {
         return 1
     fi
 
-    # Шаг 3: Выбор ветки
+    # Шаг 3: Выбор ветки и работа с репозиторием
     print_step "3/7" " Работа с репозиторием..."
-    if check_existing_project; then
-        print_info "Обнаружен существующий проект: ${PROJECT_NAME}"
-        if prompt_yes_no "Обновить существующий проект?"; then
-            if ! prompt_branch; then
-                return 1
-            fi
-        else
-            # Если не обновляем, проверяем существующий .env
-            if [ -f "$ENV_FILE" ]; then
-                print_info "Используется существующий .env файл"
-                # Извлекаем токен из существующего файла
-                BOT_TOKEN=$(grep "^BOT_TOKEN=" "$ENV_FILE" | cut -d'=' -f2)
-                if [ -z "$BOT_TOKEN" ] || [ "$BOT_TOKEN" = "YOUR_BOT_TOKEN_HERE" ]; then
-                    print_warning "Токен не найден или не настроен"
-                    if ! prompt_bot_token; then
-                        return 1
-                    fi
-                fi
-            else
-                print_info ".env файл не найден"
-                if ! prompt_branch; then
-                    return 1
-                fi
-            fi
-        fi
-    else
-        print_info "Новая установка"
-        if ! prompt_branch; then
-            return 1
-        fi
+
+    if ! prompt_branch; then
+        return 1
     fi
 
-    # Шаг 3: Работа с репозиторием
-    if [ -n "$BRANCH" ]; then
-        if ! clone_or_update_repo; then
-            return 1
-        fi
+    if ! clone_or_update_repo; then
+        return 1
     fi
 
     # Шаг 4: Настройка конфигурации

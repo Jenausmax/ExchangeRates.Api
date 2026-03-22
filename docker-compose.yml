@@ -20,7 +20,7 @@ services:
       - ClientConfig__JobsValute=false
       - ClientConfig__JobsValuteToHour=True
     volumes:
-      - ./data:/app/data
+      - ./databases/api-data:/app/data
       - ./logs:/app/logs
     restart: unless-stopped
     networks:
@@ -57,7 +57,7 @@ services:
       - BotConfig__ImportantNewsEnabled=${IMPORTANT_NEWS_ENABLED:-false}
     volumes:
       # ОТДЕЛЬНЫЕ volumes от API
-      - ./bot-data:/app/data
+      - ./databases/bot-data:/app/data
       - ./bot-logs:/app/logs
     restart: unless-stopped
     networks:
@@ -83,7 +83,7 @@ services:
       - LlmConfig__PolzaApiKey=${POLZA_API_KEY:-}
       - LlmConfig__OllamaUrl=${OLLAMA_URL:-http://localhost:11434}
     volumes:
-      - ./news-data:/app/data
+      - ./databases/news-data:/app/data
       - ./news-logs:/app/logs
     restart: unless-stopped
     networks:

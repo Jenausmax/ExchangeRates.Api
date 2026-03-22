@@ -367,6 +367,7 @@ FodyWeavers.xsd
 skills-lock.json
 
 # Data and logs directories
+databases/
 data/
 logs/
 bot-data/
