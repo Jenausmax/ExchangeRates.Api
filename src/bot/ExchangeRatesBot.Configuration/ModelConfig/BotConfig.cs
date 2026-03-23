@@ -34,5 +34,10 @@
         /// Включить рассылку важных новостей (раз в час)
         /// </summary>
         public bool ImportantNewsEnabled { get; set; } = false;
+
+        /// <summary>
+        /// URL микросервиса криптовалют (KriptoService)
+        /// </summary>
+        public string KriptoServiceUrl { get; set; } = "";
     }
 }

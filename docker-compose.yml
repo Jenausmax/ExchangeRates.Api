@@ -34,6 +34,7 @@ services:
     depends_on:
       - exchangerates-api
       - exchangerates-news
+      - exchangerates-kripto
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
@@ -55,6 +56,8 @@ services:
       - BotConfig__NewsEnabled=${NEWS_ENABLED:-false}
       - BotConfig__NewsTime=${NEWS_TIME:-09:00}
       - BotConfig__ImportantNewsEnabled=${IMPORTANT_NEWS_ENABLED:-false}
+      # Крипто-сервис
+      - BotConfig__KriptoServiceUrl=http://exchangerates-kripto:80/
     volumes:
       # ОТДЕЛЬНЫЕ volumes от API
       - ./databases/bot-data:/app/data

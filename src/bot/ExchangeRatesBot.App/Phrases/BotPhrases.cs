@@ -61,8 +61,9 @@
             "Валюты -- выбор валют для отслеживания\n\r" +
             "Подписка -- управление всеми подписками\n\r" +
             "Новости -- лента последних новостей\n\r" +
+            "Крипто -- курсы криптовалют\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
-            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /help";
+            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /crypto, /help";
 
         // --- Новостной дайджест ---
 
@@ -124,5 +125,34 @@
 
         public static string SubscriptionMenuHeader { get; } = "Управление подписками:";
         public static string NewsDigestMenuHeader { get; } = "Новостной дайджест:";
+
+        // --- Криптовалюты ---
+
+        /// <summary>
+        /// Текст кнопки "Крипто" в ReplyKeyboard
+        /// </summary>
+        public static string BtnCrypto { get; } = "Крипто";
+
+        /// <summary>
+        /// Сообщение при недоступности данных о криптовалютах
+        /// </summary>
+        public static string CryptoEmpty { get; } = "Данные о криптовалютах временно недоступны. Попробуйте позже.";
+
+        /// <summary>
+        /// Человекочитаемые названия криптовалют
+        /// </summary>
+        public static System.Collections.Generic.Dictionary<string, string> CryptoNames { get; } = new()
+        {
+            ["BTC"] = "Bitcoin",
+            ["ETH"] = "Ethereum",
+            ["SOL"] = "Solana",
+            ["XRP"] = "XRP",
+            ["BNB"] = "BNB",
+            ["USDT"] = "Tether",
+            ["DOGE"] = "Dogecoin",
+            ["ADA"] = "Cardano",
+            ["TON"] = "Toncoin",
+            ["AVAX"] = "Avalanche"
+        };
     }
 }

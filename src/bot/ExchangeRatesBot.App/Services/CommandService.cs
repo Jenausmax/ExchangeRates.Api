@@ -1,6 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using ExchangeRatesBot.Domain.Interfaces;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,25 +22,27 @@ namespace ExchangeRatesBot.App.Services
         private readonly IUserService _userControl;
         private readonly IBotService _botService;
         private readonly INewsApiClient _newsClient;
+        private readonly IKriptoApiClient _kriptoClient;
 
         // Временное состояние выбора валют для каждого пользователя (chatId -> HashSet<currencies>)
         private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingSelections = new();
         // Временное состояние выбора расписания новостей (chatId -> HashSet<time slots>)
         private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingNewsSchedule = new();
-        //private Update _update;
 
         public CommandService(IUpdateService updateService,
             IProcessingService processingService,
             IMessageValute valuteService,
             IUserService userControl,
             IBotService botService,
-            INewsApiClient newsClient)
+            INewsApiClient newsClient,
+            IKriptoApiClient kriptoClient)
         {
             _updateService = updateService;
             _valuteService = valuteService;
             _userControl = userControl;
             _botService = botService;
             _newsClient = newsClient;
+            _kriptoClient = kriptoClient;
         }
 
         //public async Task SetUpdateBot(Update update)
@@ -89,6 +94,15 @@ namespace ExchangeRatesBot.App.Services
             // Установить текущего пользователя для callback
             var chatId = update.CallbackQuery.From.Id;
             await _userControl.SetUser(chatId);
+
+            // Криптовалюты: crypto_rub, crypto_usd, crypto_refresh_rub, crypto_refresh_usd
+            if (callbackData.StartsWith("crypto_"))
+            {
+                var currency = callbackData.EndsWith("usd") ? "USD" : "RUB";
+                await HandleCryptoCallback(update, currency);
+                await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                return;
+            }
 
             // Пагинация новостей: news_p_{id}
             if (callbackData.StartsWith("news_p_"))
@@ -354,6 +368,12 @@ namespace ExchangeRatesBot.App.Services
                         new InlineKeyboardMarkup(PeriodSelectionKeyboard()));
                     break;
 
+                // --- Команда /crypto и кнопка "Крипто" ---
+                case "/crypto":
+                case var txt when txt == BotPhrases.BtnCrypto:
+                    await HandleCryptoCommand(update, "RUB");
+                    break;
+
                 // --- Команда /news и кнопка "Новости" — сразу лента новостей ---
                 case "/news":
                 case var txt when txt == BotPhrases.BtnNews:
@@ -449,7 +469,7 @@ namespace ExchangeRatesBot.App.Services
             {
                 new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays), new KeyboardButton(BotPhrases.BtnStatistics) },
                 new[] { new KeyboardButton(BotPhrases.BtnCurrencies),     new KeyboardButton(BotPhrases.BtnSubscribe),     new KeyboardButton(BotPhrases.BtnHelp) },
-                new[] { new KeyboardButton(BotPhrases.BtnNews) }
+                new[] { new KeyboardButton(BotPhrases.BtnNews), new KeyboardButton(BotPhrases.BtnCrypto) }
             })
             {
                 ResizeKeyboard = true
@@ -667,6 +687,124 @@ namespace ExchangeRatesBot.App.Services
             });
 
             return rows;
+        }
+
+        // --- Криптовалюты ---
+
+        /// <summary>
+        /// Обработка команды /crypto и кнопки "Крипто" (новое сообщение)
+        /// </summary>
+        private async Task HandleCryptoCommand(Update update, string currency)
+        {
+            var result = await _kriptoClient.GetLatestPricesAsync(currency, CancellationToken.None);
+
+            if (result.Prices == null || result.Prices.Count == 0)
+            {
+                await _updateService.EchoTextMessageAsync(update, BotPhrases.CryptoEmpty, default);
+                return;
+            }
+
+            var message = FormatCryptoPrices(result, currency);
+            var keyboard = CryptoInlineKeyboard(currency);
+            await _updateService.EchoTextMessageAsync(update, message, keyboard);
+        }
+
+        /// <summary>
+        /// Обработка inline-callback'ов крипто (редактирование сообщения)
+        /// </summary>
+        private async Task HandleCryptoCallback(Update update, string currency)
+        {
+            var chatId = update.CallbackQuery.Message.Chat.Id;
+            var messageId = update.CallbackQuery.Message.MessageId;
+            var result = await _kriptoClient.GetLatestPricesAsync(currency, CancellationToken.None);
+
+            if (result.Prices == null || result.Prices.Count == 0)
+            {
+                await _botService.Client.EditMessageTextAsync(
+                    chatId: chatId,
+                    messageId: messageId,
+                    text: BotPhrases.CryptoEmpty);
+                return;
+            }
+
+            var message = FormatCryptoPrices(result, currency);
+            var keyboard = CryptoInlineKeyboard(currency);
+
+            await _botService.Client.EditMessageTextAsync(
+                chatId: chatId,
+                messageId: messageId,
+                text: message,
+                parseMode: ParseMode.Markdown,
+                replyMarkup: keyboard);
+        }
+
+        /// <summary>
+        /// Форматирование курсов криптовалют для Telegram
+        /// </summary>
+        private static string FormatCryptoPrices(CryptoPriceResult result, string currency)
+        {
+            var currencySign = currency == "RUB" ? "\u20BD" : "$";
+            var sb = new StringBuilder();
+            sb.AppendLine($"*Курсы криптовалют ({EscapeMarkdown(currency)})*");
+            sb.AppendLine($"_{result.FetchedAt:dd.MM.yyyy HH:mm} UTC_");
+            sb.AppendLine();
+
+            var index = 1;
+            foreach (var item in result.Prices)
+            {
+                var arrow = item.ChangePct24h >= 0 ? "\U0001F7E2" : "\U0001F534";
+                var sign = item.ChangePct24h >= 0 ? "+" : "";
+                var name = EscapeMarkdown(BotPhrases.CryptoNames.GetValueOrDefault(item.Symbol ?? "", item.Symbol ?? ""));
+                var symbol = EscapeMarkdown(item.Symbol ?? "");
+                var priceStr = FormatCryptoPrice(item.Price);
+
+                sb.AppendLine($"{index}. *{symbol}* ({name})");
+                sb.AppendLine($"   {priceStr} {currencySign}  {arrow} {sign}{item.ChangePct24h.ToString("F1", CultureInfo.InvariantCulture)}%");
+                sb.AppendLine();
+                index++;
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Форматирование цены с разделителями тысяч
+        /// </summary>
+        private static string FormatCryptoPrice(decimal price)
+        {
+            if (price >= 1000)
+                return price.ToString("N0", CultureInfo.InvariantCulture);
+            if (price >= 1)
+                return price.ToString("N2", CultureInfo.InvariantCulture);
+            return price.ToString("N4", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Экранирование специальных символов Markdown для Telegram
+        /// </summary>
+        private static string EscapeMarkdown(string text)
+            => text.Replace("_", "\\_").Replace("*", "\\*").Replace("[", "\\[").Replace("`", "\\`");
+
+        /// <summary>
+        /// Inline-клавиатура для крипто: переключение валюты + обновление
+        /// </summary>
+        private static InlineKeyboardMarkup CryptoInlineKeyboard(string activeCurrency)
+        {
+            return new InlineKeyboardMarkup(new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        activeCurrency == "RUB" ? "[ RUB ]" : "RUB", "crypto_rub"),
+                    InlineKeyboardButton.WithCallbackData(
+                        activeCurrency == "USD" ? "[ USD ]" : "USD", "crypto_usd")
+                },
+                new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        "\U0001F504 Обновить", $"crypto_refresh_{activeCurrency.ToLower()}")
+                }
+            });
         }
     }
 }

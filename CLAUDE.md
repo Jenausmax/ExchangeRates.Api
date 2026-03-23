@@ -8,20 +8,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Обзор проекта
 
-Монорепозиторий содержит три микросервиса:
+Монорепозиторий содержит четыре микросервиса:
 
 1. **ExchangeRates.Api** — REST API для получения и хранения курсов валют от ЦБ РФ
 2. **ExchangeRatesBot** — Telegram-бот для предоставления курсов валют пользователям
 3. **NewsService** — микросервис новостного дайджеста (RSS-парсинг ЦБ РФ, LLM-суммаризация)
+4. **KriptoService** — микросервис курсов криптовалют (CryptoCompare API, топ-10 монет)
 
-Все сервисы — .NET 10.0 / ASP.NET Core, используют SQLite (каждый свою БД) и развертываются через docker-compose (3 контейнера в общей сети).
+Все сервисы — .NET 10.0 / ASP.NET Core, используют SQLite (каждый свою БД) и развертываются через docker-compose (4 контейнера в общей сети).
 
 ## Команды для сборки и запуска
 
 ### Локальная разработка
 
 ```bash
-# Сборка решения (22 проекта)
+# Сборка решения (29 проектов)
 dotnet build src/ExchangeRates.Api.sln
 
 # Запуск API
@@ -32,6 +33,9 @@ dotnet run --project src/bot/ExchangeRatesBot/ExchangeRatesBot.csproj
 
 # Запуск NewsService
 dotnet run --project src/newsservice/NewsService/NewsService.csproj
+
+# Запуск KriptoService
+dotnet run --project src/kriptoservice/KriptoService/KriptoService.csproj
 
 # EF миграции для API
 dotnet ef database update --project src/ExchangeRates.Migrations --startup-project src/ExchangeRates.Api
@@ -44,6 +48,10 @@ dotnet ef migrations add <Name> --project src/bot/ExchangeRatesBot.Migrations --
 # EF миграции для NewsService
 dotnet ef database update --project src/newsservice/NewsService.Migrations --startup-project src/newsservice/NewsService
 dotnet ef migrations add <Name> --project src/newsservice/NewsService.Migrations --startup-project src/newsservice/NewsService
+
+# EF миграции для KriptoService
+dotnet ef database update --project src/kriptoservice/KriptoService.Migrations --startup-project src/kriptoservice/KriptoService
+dotnet ef migrations add <Name> --project src/kriptoservice/KriptoService.Migrations --startup-project src/kriptoservice/KriptoService
 ```
 
 ### Docker (рекомендуется)
@@ -52,7 +60,7 @@ dotnet ef migrations add <Name> --project src/newsservice/NewsService.Migrations
 # Автоматическое развертывание
 chmod +x deploy.sh && ./deploy.sh
 
-# Ручной запуск всех 3 сервисов
+# Ручной запуск всех 4 сервисов
 docker-compose up -d
 
 # Остановка
@@ -63,6 +71,7 @@ docker-compose logs -f
 docker-compose logs -f exchangerates-api
 docker-compose logs -f exchangerates-bot
 docker-compose logs -f exchangerates-news
+docker-compose logs -f exchangerates-kripto
 
 # Пересборка и перезапуск
 docker-compose up -d --build
@@ -80,6 +89,7 @@ NEWS_TIME=09:00
 LLM_PROVIDER=
 POLZA_API_KEY=
 OLLAMA_URL=http://localhost:11434
+CRYPTO_API_KEY=
 ```
 
 ## Процесс работы над фичами
@@ -151,19 +161,19 @@ src/
 ```
 src/bot/
   ExchangeRatesBot/                    # Web Host, UpdateController (webhook)
-  ExchangeRatesBot.App/               # BotService, CommandService, UpdateService, MessageValuteService, UserService, NewsApiClientService, BotPhrases
-  ExchangeRatesBot.Domain/            # Интерфейсы (IBotService, ICommandBot, IUserService, INewsApiClient), модели
+  ExchangeRatesBot.App/               # BotService, CommandService, UpdateService, MessageValuteService, UserService, NewsApiClientService, KriptoApiClientService, BotPhrases
+  ExchangeRatesBot.Domain/            # Интерфейсы (IBotService, ICommandBot, IUserService, INewsApiClient, IKriptoApiClient), модели
   ExchangeRatesBot.DB/                # EF Core DataDb, UserDb (ChatId, Subscribe, NewsSubscribe, Currencies, NewsTimes, LastNewsDeliveredAt), RepositoryDb<T>
-  ExchangeRatesBot.Configuration/     # BotConfig (BotToken, UsePolling, Webhook, UrlRequest, NewsServiceUrl, NewsEnabled, NewsTime)
+  ExchangeRatesBot.Configuration/     # BotConfig (BotToken, UsePolling, Webhook, UrlRequest, NewsServiceUrl, NewsEnabled, NewsTime, KriptoServiceUrl)
   ExchangeRatesBot.Maintenance/       # JobsSendMessageUsers, JobsSendNewsDigest, PollingBackgroundService
   ExchangeRatesBot.Migrations/        # EF Core миграции
 ```
 
-**Команды бота**: `/start`, `/help`, `/valuteoneday`, `/valutesevendays`, `/currencies`, `/subscribe`, `/unsubscribe`, `/news`
+**Команды бота**: `/start`, `/help`, `/valuteoneday`, `/valutesevendays`, `/currencies`, `/subscribe`, `/unsubscribe`, `/news`, `/crypto`
 
-**Reply-клавиатура**: 3 ряда — (Курс сегодня | За 7 дней), (Подписка | Помощь), (Новости)
+**Reply-клавиатура**: 3 ряда — (Курс сегодня | За 7 дней | Статистика), (Валюты | Подписка | Помощь), (Новости | Крипто)
 
-**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `news_subscribe`, `news_unsubscribe`, `news_latest`, `news_schedule`, `toggle_news_{HH}`, `save_news_schedule`
+**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `news_subscribe`, `news_unsubscribe`, `news_latest`, `news_schedule`, `toggle_news_{HH}`, `save_news_schedule`, `sub_toggle_rates`, `sub_toggle_important`, `sub_news_menu`, `sub_news_toggle`, `sub_back`, `news_p_{ID}`, `period_{N}`, `crypto_rub`, `crypto_usd`, `crypto_refresh_rub`, `crypto_refresh_usd`
 
 **Режимы работы** (через `BotConfig.UsePolling`):
 - **Polling** (true, рекомендуется для Docker): `PollingBackgroundService` → `GetUpdatesAsync` (long polling, 30s)
@@ -194,19 +204,45 @@ src/newsservice/
 
 **Дедупликация**: SHA256 от нормализованного заголовка, уникальный индекс ContentHash
 
+### KriptoService (Курсы криптовалют) — 7 проектов
+
+```
+src/kriptoservice/
+  KriptoService/                       # Web Host, CryptoController (3 эндпоинта)
+  KriptoService.App/                   # CryptoCompareFetcherService, CryptoService
+  KriptoService.Domain/                # Модели (CryptoPriceDb), DTO, интерфейсы
+  KriptoService.DB/                    # EF Core KriptoDataDb, CryptoRepository
+  KriptoService.Configuration/         # KriptoConfig
+  KriptoService.Maintenance/           # KriptoBackgroundTask<T>, JobsFetchCrypto (каждые 5 мин)
+  KriptoService.Migrations/            # EF Core миграции
+```
+
+**API эндпоинты**:
+- `GET /api/crypto/latest?symbols=BTC,ETH&currencies=RUB` — последние курсы
+- `GET /api/crypto/history?symbol=BTC&currency=RUB&hours=24` — история за N часов
+- `GET /api/crypto/status` — статус сервиса
+
+**Источник данных**: CryptoCompare API (`/data/pricemultifull`), 100K вызовов/мес, прямая поддержка RUB
+
+**Топ-10 монет**: BTC, ETH, SOL, XRP, BNB, USDT, DOGE, ADA, TON, AVAX
+
+**Фоновая задача**: `JobsFetchCrypto` — фетчинг каждые 5 мин, очистка записей старше 30 дней раз в сутки
+
 ### Docker Compose архитектура
 
-Три сервиса в общей сети `exchangerates-network`:
+Четыре сервиса в общей сети `exchangerates-network`:
 
 | Сервис | Контейнер | Порты | Volumes | Зависит от |
 |--------|-----------|-------|---------|------------|
-| API | exchangerates-api | 5000:80 | ./data, ./logs | — |
-| Bot | exchangerates-bot | — | ./bot-data, ./bot-logs | api, news |
-| News | exchangerates-news | 5002:80 | ./news-data, ./news-logs | — |
+| API | exchangerates-api | 5000:80 | ./databases/api-data, ./logs | — |
+| Bot | exchangerates-bot | — | ./databases/bot-data, ./bot-logs | api, news, kripto |
+| News | exchangerates-news | 5002:80 | ./databases/news-data, ./news-logs | — |
+| Kripto | exchangerates-kripto | 5003:80 | ./databases/kripto-data, ./kripto-logs | — |
 
 **КРИТИЧНО**: В Docker сети сервисы обращаются друг к другу по имени контейнера:
 - Бот → API: `http://exchangerates-api:80/`
 - Бот → News: `http://exchangerates-news:80/`
+- Бот → Kripto: `http://exchangerates-kripto:80/`
 
 ## Конфигурация
 
@@ -228,6 +264,7 @@ src/newsservice/
 - **BotConfig:NewsServiceUrl**: URL NewsService (Docker: `http://exchangerates-news:80/`)
 - **BotConfig:NewsEnabled**: Включить фоновую рассылку новостей (`true`/`false`)
 - **BotConfig:NewsTime**: Дефолтное время для новых подписчиков (например, "09:00"), per-user расписание хранится в UserDb.NewsTimes
+- **BotConfig:KriptoServiceUrl**: URL KriptoService (Docker: `http://exchangerates-kripto:80/`)
 - **ConnectionStrings:SqliteConnection**: SQLite connection string
 
 ### NewsService (appsettings.json + .env)
@@ -241,9 +278,20 @@ src/newsservice/
 - **LlmConfig:OllamaUrl**: URL Ollama сервера
 - **ConnectionStrings:NewsDb**: SQLite connection string
 
+### KriptoService (appsettings.json + .env)
+
+- **KriptoConfig:Enabled**: Включить фетчинг криптовалют (`true`/`false`)
+- **KriptoConfig:FetchIntervalMinutes**: Интервал фетча (по умолчанию 5)
+- **KriptoConfig:ApiUrl**: URL CryptoCompare API
+- **KriptoConfig:ApiKey**: API-ключ CryptoCompare (опционально, через .env `CRYPTO_API_KEY`)
+- **KriptoConfig:Symbols**: Массив символов монет (BTC, ETH, SOL, ...)
+- **KriptoConfig:Currencies**: Массив валют (RUB, USD)
+- **KriptoConfig:HistoryRetentionDays**: Хранить записи N дней (по умолчанию 30)
+- **ConnectionStrings:KriptoDb**: SQLite connection string
+
 ## Логирование
 
-Все три сервиса используют **Serilog**:
+Все четыре сервиса используют **Serilog**:
 - Консольный вывод для мониторинга
 - SQLite sink (`log.db`) для постоянного хранения
 - Настройка в `Program.cs` через `UseSerilog()`
@@ -252,7 +300,7 @@ src/newsservice/
 
 ### .NET версия и совместимость
 
-Проект использует **.NET 10.0** с **EF Core 8.0.0**. Все 22 проекта в solution.
+Проект использует **.NET 10.0** с **EF Core 8.0.0**. Все 29 проектов в solution.
 
 ### Telegram.Bot версия и совместимость
 
@@ -271,14 +319,16 @@ src/newsservice/
 - `BackgroundService` для долгоживущих задач (polling)
 - `BackgroundTaskAbstract<T>` для периодических задач (API, бот)
 - `NewsBackgroundTask<T>` для периодических задач (NewsService)
+- `KriptoBackgroundTask<T>` для периодических задач (KriptoService)
 - Scoped сервисы в фоновых задачах через `_serviceProvider.CreateScope()`
 
 ### Условная регистрация сервисов
 
-Во всех трех приложениях используется условная регистрация `IHostedService` в `Startup.ConfigureServices`:
+Во всех четырёх приложениях используется условная регистрация `IHostedService` в `Startup.ConfigureServices`:
 - **API**: `JobsCreateValute` при `JobsValute=True`, `JobsCreateValuteToHour` при `JobsValuteToHour=True`
 - **Bot**: `PollingBackgroundService` при `UsePolling=true`, `JobsSendNewsDigest` при `NewsEnabled=true`
 - **News**: `JobsFetchNews` при `NewsConfig.Enabled=true`
+- **Kripto**: `JobsFetchCrypto` при `KriptoConfig.Enabled=true`
 
 ### Персонализация валют
 
@@ -294,3 +344,4 @@ src/newsservice/
 
 - **Курсы валют**: https://www.cbr-xml-daily.ru/daily_json.js — JSON с 34 валютами ЦБ РФ
 - **Новости ЦБ**: RSS 2.0 с cbr.ru — парсится через XmlDocument в NewsService
+- **Курсы криптовалют**: CryptoCompare API (`https://min-api.cryptocompare.com/data/pricemultifull`) — топ-10 монет, RUB/USD

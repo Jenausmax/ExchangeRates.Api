@@ -36,6 +36,7 @@ namespace ExchangeRatesBot
             services.AddScoped<IMessageValute, MessageValuteService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<INewsApiClient, NewsApiClientService>();
+            services.AddScoped<IKriptoApiClient, KriptoApiClientService>();
             services.AddScoped(typeof(IBaseRepositoryDb<>), (typeof(RepositoryDb<>)));
 
             services.Configure<BotConfig>(Config.GetSection("BotConfig"));
