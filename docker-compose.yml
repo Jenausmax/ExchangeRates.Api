@@ -89,6 +89,27 @@ services:
     networks:
       - exchangerates-network
 
+  exchangerates-kripto:
+    build:
+      context: ./src
+      dockerfile: kriptoservice/KriptoService/Dockerfile
+    container_name: exchangerates-kripto
+    ports:
+      - "5003:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__KriptoDb=Data Source=/app/data/Kripto.db;foreign keys=false;
+      - KriptoConfig__Enabled=true
+      - KriptoConfig__FetchIntervalMinutes=5
+      - KriptoConfig__ApiKey=${CRYPTO_API_KEY:-}
+    volumes:
+      - ./databases/kripto-data:/app/data
+      - ./kripto-logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - exchangerates-network
+
 networks:
   exchangerates-network:
     driver: bridge
