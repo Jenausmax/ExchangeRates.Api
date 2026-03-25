@@ -36,11 +36,16 @@ namespace ExchangeRatesBot.App.Services
         /// <summary>
         /// Получить последние курсы криптовалют от KriptoService
         /// </summary>
-        public async Task<CryptoPriceResult> GetLatestPricesAsync(string currency = "RUB", CancellationToken cancel = default)
+        public async Task<CryptoPriceResult> GetLatestPricesAsync(string currency = "RUB", string symbols = null, CancellationToken cancel = default)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/crypto/latest?currencies={currency}", cancel);
+                var url = $"api/crypto/latest?currencies={currency}";
+                if (!string.IsNullOrEmpty(symbols))
+                {
+                    url += $"&symbols={symbols}";
+                }
+                var response = await _httpClient.GetAsync(url, cancel);
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync(cancel);
                 return JsonSerializer.Deserialize<CryptoPriceResult>(json, _jsonOptions)

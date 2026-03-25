@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-03-25
+
+### Сделано сегодня
+- **BOT-0024: Персонализация криптовалют** (ветка `feature/BOT-0024-crypto-personalization`):
+  - Новое поле `UserDb.CryptoCoins` (CSV, nullable) + EF-миграция `AddCryptoCoins`
+  - `IUserService`: методы `UpdateCryptoCoins`, `GetUserCryptoCoins`
+  - `IKriptoApiClient.GetLatestPricesAsync` — новый параметр `symbols` для фильтрации
+  - Кнопка «Монеты» в reply-клавиатуре + команда `/cryptocoins`
+  - Inline-клавиатура с toggle 10 монет (`toggle_crypto_{SYMBOL}` / `save_crypto_coins`)
+  - `HandleCryptoCommand`/`HandleCryptoCallback` передают выбранные символы в KriptoService
+  - NULL = все 10 монет (обратная совместимость)
+  - Задеплоено — все 4 контейнера работают
+- **Архитектурная документация** (в `doc/architect/`):
+  - ADR + архитектура BOT-0024 (персонализация криптовалют)
+  - ADR + архитектура BOT-0025 (декомпозиция CommandService на доменные handler'ы)
+
+### Запланировано
+- Тестирование BOT-0024 в Telegram
+- Слить BOT-0024 в develop
+- BOT-0025: Декомпозиция CommandService (7 handler'ов)
+
+### Идеи
+- Подписка на крипто-рассылку (фоновая задача)
+- Уведомления по изменению курса крипты (порог %)
+- Визуальный индикатор важности новостей
+
+### Блокеры
+- Нет
+
+---
+
 ## 2026-03-23 (сессия 2)
 
 ### Сделано сегодня

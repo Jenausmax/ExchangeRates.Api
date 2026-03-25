@@ -28,6 +28,8 @@ namespace ExchangeRatesBot.App.Services
         private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingSelections = new();
         // Временное состояние выбора расписания новостей (chatId -> HashSet<time slots>)
         private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingNewsSchedule = new();
+        // Временное состояние выбора криптовалют (chatId -> HashSet<symbols>)
+        private static readonly ConcurrentDictionary<long, HashSet<string>> _pendingCryptoSelections = new();
 
         public CommandService(IUpdateService updateService,
             IProcessingService processingService,
@@ -116,6 +118,14 @@ namespace ExchangeRatesBot.App.Services
                 return;
             }
 
+            // Toggle криптомонеты — ВАЖНО: проверять ДО toggle_ (фиат)
+            if (callbackData.StartsWith("toggle_crypto_"))
+            {
+                var symbol = callbackData.Substring(14); // "toggle_crypto_BTC" -> "BTC"
+                await HandleToggleCryptoSymbol(update, chatId, symbol);
+                return;
+            }
+
             // Toggle расписания новостей
             if (callbackData.StartsWith("toggle_news_"))
             {
@@ -160,6 +170,10 @@ namespace ExchangeRatesBot.App.Services
             {
                 case "save_currencies":
                     await HandleSaveCurrencies(update, chatId);
+                    break;
+
+                case "save_crypto_coins":
+                    await HandleSaveCryptoCoins(update, chatId);
                     break;
 
                 // --- Меню подписок: toggle курсов валют ---
@@ -368,6 +382,21 @@ namespace ExchangeRatesBot.App.Services
                         new InlineKeyboardMarkup(PeriodSelectionKeyboard()));
                     break;
 
+                // --- Команда /cryptocoins и кнопка "Монеты" ---
+                case "/cryptocoins":
+                case var txt when txt == BotPhrases.BtnCryptoCoins:
+                    {
+                        var currentCoins = _userControl.GetUserCryptoCoins(_userControl.CurrentUser.ChatId);
+                        _pendingCryptoSelections[_userControl.CurrentUser.ChatId] = currentCoins != null
+                            ? new HashSet<string>(currentCoins)
+                            : new HashSet<string>(BotPhrases.AvailableCryptoCoins);
+                        await _updateService.EchoTextMessageAsync(
+                            update,
+                            BotPhrases.CryptoCoinsHeader,
+                            new InlineKeyboardMarkup(CryptoCoinsKeyboard(_userControl.CurrentUser.ChatId)));
+                        break;
+                    }
+
                 // --- Команда /crypto и кнопка "Крипто" ---
                 case "/crypto":
                 case var txt when txt == BotPhrases.BtnCrypto:
@@ -469,7 +498,7 @@ namespace ExchangeRatesBot.App.Services
             {
                 new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays), new KeyboardButton(BotPhrases.BtnStatistics) },
                 new[] { new KeyboardButton(BotPhrases.BtnCurrencies),     new KeyboardButton(BotPhrases.BtnSubscribe),     new KeyboardButton(BotPhrases.BtnHelp) },
-                new[] { new KeyboardButton(BotPhrases.BtnNews), new KeyboardButton(BotPhrases.BtnCrypto) }
+                new[] { new KeyboardButton(BotPhrases.BtnNews), new KeyboardButton(BotPhrases.BtnCrypto), new KeyboardButton(BotPhrases.BtnCryptoCoins) }
             })
             {
                 ResizeKeyboard = true
@@ -696,7 +725,9 @@ namespace ExchangeRatesBot.App.Services
         /// </summary>
         private async Task HandleCryptoCommand(Update update, string currency)
         {
-            var result = await _kriptoClient.GetLatestPricesAsync(currency, CancellationToken.None);
+            var coins = _userControl.GetUserCryptoCoins(_userControl.CurrentUser.ChatId);
+            var symbols = coins != null ? string.Join(",", coins) : null;
+            var result = await _kriptoClient.GetLatestPricesAsync(currency, symbols, CancellationToken.None);
 
             if (result.Prices == null || result.Prices.Count == 0)
             {
@@ -716,7 +747,9 @@ namespace ExchangeRatesBot.App.Services
         {
             var chatId = update.CallbackQuery.Message.Chat.Id;
             var messageId = update.CallbackQuery.Message.MessageId;
-            var result = await _kriptoClient.GetLatestPricesAsync(currency, CancellationToken.None);
+            var coins = _userControl.GetUserCryptoCoins(update.CallbackQuery.From.Id);
+            var symbols = coins != null ? string.Join(",", coins) : null;
+            var result = await _kriptoClient.GetLatestPricesAsync(currency, symbols, CancellationToken.None);
 
             if (result.Prices == null || result.Prices.Count == 0)
             {
@@ -805,6 +838,95 @@ namespace ExchangeRatesBot.App.Services
                         "\U0001F504 Обновить", $"crypto_refresh_{activeCurrency.ToLower()}")
                 }
             });
+        }
+
+        // --- Персонализация криптовалют ---
+
+        /// <summary>
+        /// Toggle криптомонеты в pending-выборе
+        /// </summary>
+        private async Task HandleToggleCryptoSymbol(Update update, long chatId, string symbol)
+        {
+            if (!_pendingCryptoSelections.ContainsKey(chatId))
+            {
+                var currentCoins = _userControl.GetUserCryptoCoins(chatId);
+                _pendingCryptoSelections[chatId] = currentCoins != null
+                    ? new HashSet<string>(currentCoins)
+                    : new HashSet<string>(BotPhrases.AvailableCryptoCoins);
+            }
+
+            var selection = _pendingCryptoSelections[chatId];
+            if (selection.Contains(symbol))
+                selection.Remove(symbol);
+            else
+                selection.Add(symbol);
+
+            await _botService.Client.EditMessageReplyMarkupAsync(
+                chatId: update.CallbackQuery.Message.Chat.Id,
+                messageId: update.CallbackQuery.Message.MessageId,
+                replyMarkup: new InlineKeyboardMarkup(CryptoCoinsKeyboard(chatId)));
+
+            await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+        }
+
+        /// <summary>
+        /// Сохранить выбор криптомонет в БД
+        /// </summary>
+        private async Task HandleSaveCryptoCoins(Update update, long chatId)
+        {
+            if (!_pendingCryptoSelections.ContainsKey(chatId) || _pendingCryptoSelections[chatId].Count == 0)
+            {
+                await _updateService.EchoTextMessageAsync(update, BotPhrases.CryptoCoinsEmpty, default);
+                await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                return;
+            }
+
+            var selected = _pendingCryptoSelections[chatId];
+            var coinsString = string.Join(",", selected);
+            await _userControl.UpdateCryptoCoins(chatId, coinsString, CancellationToken.None);
+
+            _pendingCryptoSelections.TryRemove(chatId, out _);
+
+            await _updateService.EchoTextMessageAsync(
+                update,
+                BotPhrases.CryptoCoinsSaved + coinsString,
+                default);
+            await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+        }
+
+        /// <summary>
+        /// Inline-клавиатура для выбора криптовалют
+        /// </summary>
+        private List<List<InlineKeyboardButton>> CryptoCoinsKeyboard(long chatId)
+        {
+            var selected = _pendingCryptoSelections.ContainsKey(chatId)
+                ? _pendingCryptoSelections[chatId]
+                : new HashSet<string>();
+
+            var rows = new List<List<InlineKeyboardButton>>();
+            var currentRow = new List<InlineKeyboardButton>();
+
+            foreach (var coin in BotPhrases.AvailableCryptoCoins)
+            {
+                var isSelected = selected.Contains(coin);
+                var label = isSelected ? $"\u2705 {coin}" : $"\u2B1C {coin}";
+                currentRow.Add(InlineKeyboardButton.WithCallbackData(label, $"toggle_crypto_{coin}"));
+
+                if (currentRow.Count == 3)
+                {
+                    rows.Add(currentRow);
+                    currentRow = new List<InlineKeyboardButton>();
+                }
+            }
+            if (currentRow.Count > 0)
+                rows.Add(currentRow);
+
+            rows.Add(new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData("\u2705 Сохранить", "save_crypto_coins")
+            });
+
+            return rows;
         }
     }
 }

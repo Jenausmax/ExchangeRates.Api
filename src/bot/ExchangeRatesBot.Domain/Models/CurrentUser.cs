@@ -10,5 +10,6 @@
         public bool NewsSubscribe { get; set; }
         public string NewsTimes { get; set; }
         public bool ImportantNewsSubscribe { get; set; }
+        public string CryptoCoins { get; set; }
     }
 }

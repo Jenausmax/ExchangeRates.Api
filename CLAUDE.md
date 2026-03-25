@@ -163,17 +163,17 @@ src/bot/
   ExchangeRatesBot/                    # Web Host, UpdateController (webhook)
   ExchangeRatesBot.App/               # BotService, CommandService, UpdateService, MessageValuteService, UserService, NewsApiClientService, KriptoApiClientService, BotPhrases
   ExchangeRatesBot.Domain/            # Интерфейсы (IBotService, ICommandBot, IUserService, INewsApiClient, IKriptoApiClient), модели
-  ExchangeRatesBot.DB/                # EF Core DataDb, UserDb (ChatId, Subscribe, NewsSubscribe, Currencies, NewsTimes, LastNewsDeliveredAt), RepositoryDb<T>
+  ExchangeRatesBot.DB/                # EF Core DataDb, UserDb (ChatId, Subscribe, NewsSubscribe, Currencies, CryptoCoins, NewsTimes, LastNewsDeliveredAt), RepositoryDb<T>
   ExchangeRatesBot.Configuration/     # BotConfig (BotToken, UsePolling, Webhook, UrlRequest, NewsServiceUrl, NewsEnabled, NewsTime, KriptoServiceUrl)
   ExchangeRatesBot.Maintenance/       # JobsSendMessageUsers, JobsSendNewsDigest, PollingBackgroundService
   ExchangeRatesBot.Migrations/        # EF Core миграции
 ```
 
-**Команды бота**: `/start`, `/help`, `/valuteoneday`, `/valutesevendays`, `/currencies`, `/subscribe`, `/unsubscribe`, `/news`, `/crypto`
+**Команды бота**: `/start`, `/help`, `/valuteoneday`, `/valutesevendays`, `/currencies`, `/subscribe`, `/unsubscribe`, `/news`, `/crypto`, `/cryptocoins`
 
-**Reply-клавиатура**: 3 ряда — (Курс сегодня | За 7 дней | Статистика), (Валюты | Подписка | Помощь), (Новости | Крипто)
+**Reply-клавиатура**: 3 ряда — (Курс сегодня | За 7 дней | Статистика), (Валюты | Подписка | Помощь), (Новости | Крипто | Монеты)
 
-**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `news_subscribe`, `news_unsubscribe`, `news_latest`, `news_schedule`, `toggle_news_{HH}`, `save_news_schedule`, `sub_toggle_rates`, `sub_toggle_important`, `sub_news_menu`, `sub_news_toggle`, `sub_back`, `news_p_{ID}`, `period_{N}`, `crypto_rub`, `crypto_usd`, `crypto_refresh_rub`, `crypto_refresh_usd`
+**Inline callbacks**: `toggle_{CURRENCY}`, `save_currencies`, `toggle_crypto_{SYMBOL}`, `save_crypto_coins`, `news_subscribe`, `news_unsubscribe`, `news_latest`, `news_schedule`, `toggle_news_{HH}`, `save_news_schedule`, `sub_toggle_rates`, `sub_toggle_important`, `sub_news_menu`, `sub_news_toggle`, `sub_back`, `news_p_{ID}`, `period_{N}`, `crypto_rub`, `crypto_usd`, `crypto_refresh_rub`, `crypto_refresh_usd`
 
 **Режимы работы** (через `BotConfig.UsePolling`):
 - **Polling** (true, рекомендуется для Docker): `PollingBackgroundService` → `GetUpdatesAsync` (long polling, 30s)
@@ -333,6 +333,10 @@ src/kriptoservice/
 ### Персонализация валют
 
 Поле `UserDb.Currencies` (CSV-строка, nullable). NULL = дефолтный набор (USD, EUR, GBP, JPY, CNY). Команда `/currencies` — inline-клавиатура с 10 популярными валютами. Рассылка группирует пользователей по набору валют.
+
+### Персонализация криптовалют
+
+Поле `UserDb.CryptoCoins` (CSV-строка, nullable). NULL = все 10 монет (BTC, ETH, SOL, XRP, BNB, USDT, DOGE, ADA, TON, AVAX). Команда `/cryptocoins` или кнопка «Монеты» — inline-клавиатура с toggle. При нажатии «Крипто» показываются только выбранные монеты (передаётся `symbols` в KriptoService API).
 
 ### Персонализированное расписание новостей
 

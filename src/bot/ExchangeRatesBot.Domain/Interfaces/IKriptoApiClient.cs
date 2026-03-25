@@ -10,7 +10,7 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// <summary>
         /// Получить последние курсы криптовалют от KriptoService
         /// </summary>
-        Task<CryptoPriceResult> GetLatestPricesAsync(string currency = "RUB", CancellationToken cancel = default);
+        Task<CryptoPriceResult> GetLatestPricesAsync(string currency = "RUB", string symbols = null, CancellationToken cancel = default);
     }
 
     public class CryptoPriceResult

@@ -37,6 +37,7 @@ namespace ExchangeRatesBot.App.Services
                 CurrentUser.NewsSubscribe = userGetCollection.NewsSubscribe;
                 CurrentUser.NewsTimes = userGetCollection.NewsTimes;
                 CurrentUser.ImportantNewsSubscribe = userGetCollection.ImportantNewsSubscribe;
+                CurrentUser.CryptoCoins = userGetCollection.CryptoCoins;
                 await _userDb.Update(userGetCollection, cancel);
                 return true;
             }
@@ -203,6 +204,36 @@ namespace ExchangeRatesBot.App.Services
             userDb.LastImportantNewsAt = deliveredAt;
             await _userDb.Update(userDb, cancel);
             return true;
+        }
+
+        /// <summary>
+        /// Обновить выбранные криптовалюты пользователя
+        /// </summary>
+        public async Task<bool> UpdateCryptoCoins(long chatId, string cryptoCoins, CancellationToken cancel)
+        {
+            var usersDb = await _userDb.GetCollection(cancel);
+            var userDb = usersDb.FirstOrDefault(u => u.ChatId == chatId);
+            if (userDb == null)
+            {
+                return false;
+            }
+
+            userDb.CryptoCoins = cryptoCoins;
+            await _userDb.Update(userDb, cancel);
+            return true;
+        }
+
+        /// <summary>
+        /// Получить выбранные криптовалюты пользователя.
+        /// Возвращает null если пользователь не настраивал (= показывать все).
+        /// </summary>
+        public string[] GetUserCryptoCoins(long chatId)
+        {
+            if (CurrentUser != null && CurrentUser.ChatId == chatId && CurrentUser.CryptoCoins != null)
+            {
+                return CurrentUser.CryptoCoins.Split(',');
+            }
+            return null;
         }
     }
 }

@@ -62,8 +62,9 @@
             "Подписка -- управление всеми подписками\n\r" +
             "Новости -- лента последних новостей\n\r" +
             "Крипто -- курсы криптовалют\n\r" +
+            "Монеты -- выбор криптовалют для отслеживания\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
-            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /crypto, /help";
+            "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /crypto, /cryptocoins, /help";
 
         // --- Новостной дайджест ---
 
@@ -137,6 +138,18 @@
         /// Сообщение при недоступности данных о криптовалютах
         /// </summary>
         public static string CryptoEmpty { get; } = "Данные о криптовалютах временно недоступны. Попробуйте позже.";
+
+        /// <summary>
+        /// Текст кнопки "Монеты" в ReplyKeyboard
+        /// </summary>
+        public static string BtnCryptoCoins { get; } = "Монеты";
+
+        public static string CryptoCoinsHeader { get; } = "Выберите криптовалюты для отслеживания:";
+        public static string CryptoCoinsSaved { get; } = "*Настройки сохранены!* Выбранные монеты: ";
+        public static string CryptoCoinsEmpty { get; } = "Выберите хотя бы одну криптовалюту.";
+
+        public static string[] AvailableCryptoCoins { get; } = new string[]
+            { "BTC", "ETH", "SOL", "XRP", "BNB", "USDT", "DOGE", "ADA", "TON", "AVAX" };
 
         /// <summary>
         /// Человекочитаемые названия криптовалют

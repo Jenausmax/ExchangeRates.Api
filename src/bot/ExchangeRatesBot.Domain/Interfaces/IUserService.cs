@@ -60,5 +60,16 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Обновить время последней доставки важных новостей пользователю
         /// </summary>
         Task<bool> UpdateLastImportantNewsAt(long chatId, DateTime deliveredAt, CancellationToken cancel);
+
+        /// <summary>
+        /// Обновить выбранные криптовалюты пользователя
+        /// </summary>
+        Task<bool> UpdateCryptoCoins(long chatId, string cryptoCoins, CancellationToken cancel);
+
+        /// <summary>
+        /// Получить выбранные криптовалюты пользователя.
+        /// Возвращает null если не настраивал (= показывать все).
+        /// </summary>
+        string[] GetUserCryptoCoins(long chatId);
     }
 }
