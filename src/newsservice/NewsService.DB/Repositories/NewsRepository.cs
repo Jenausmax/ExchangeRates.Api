@@ -122,7 +122,7 @@ namespace NewsService.DB.Repositories
                 .ToListAsync(cancel);
         }
 
-        public async Task<NewsTopicDb> GetMostImportantUnsentAsync(int maxAgeHours = 0, CancellationToken cancel = default)
+        public async Task<NewsTopicDb> GetMostImportantUnsentAsync(int maxAgeHours = 0, int minSourceCount = 0, CancellationToken cancel = default)
         {
             var query = _db.Topics.Where(t => !t.IsSent);
 
@@ -130,6 +130,11 @@ namespace NewsService.DB.Repositories
             {
                 var cutoff = DateTime.UtcNow.AddHours(-maxAgeHours);
                 query = query.Where(t => t.FetchedAt >= cutoff);
+            }
+
+            if (minSourceCount > 0)
+            {
+                query = query.Where(t => t.SourceCount >= minSourceCount);
             }
 
             return await query
