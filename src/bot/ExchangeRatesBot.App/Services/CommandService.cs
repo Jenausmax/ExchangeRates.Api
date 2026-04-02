@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ExchangeRatesBot.App.Handlers;
@@ -7,6 +8,7 @@ using ExchangeRatesBot.Domain.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace ExchangeRatesBot.App.Services
 {
@@ -99,12 +101,49 @@ namespace ExchangeRatesBot.App.Services
                 case var txt when txt == BotPhrases.BtnHelp:
                     await _startHandler.HandleHelp(update);
                     break;
+
+                // --- BOT-0027: Зонтичная кнопка «Курсы» → inline-меню ---
+                case var txt when txt == BotPhrases.BtnRates:
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.RatesMenuHeader,
+                        new InlineKeyboardMarkup(new List<List<InlineKeyboardButton>>
+                        {
+                            new List<InlineKeyboardButton>
+                            {
+                                InlineKeyboardButton.WithCallbackData(BotPhrases.BtnRatesValute, "rates_valute"),
+                                InlineKeyboardButton.WithCallbackData(BotPhrases.BtnRatesCrypto, "rates_crypto")
+                            }
+                        }));
+                    break;
+
+                // --- BOT-0027: Зонтичная кнопка «Настройки» → inline-меню ---
+                case var txt when txt == BotPhrases.BtnSettings:
+                    await _updateService.EchoTextMessageAsync(
+                        update,
+                        BotPhrases.SettingsMenuHeader,
+                        new InlineKeyboardMarkup(new List<List<InlineKeyboardButton>>
+                        {
+                            new List<InlineKeyboardButton>
+                            {
+                                InlineKeyboardButton.WithCallbackData(BotPhrases.BtnSettingsCurrencies, "settings_currencies")
+                            },
+                            new List<InlineKeyboardButton>
+                            {
+                                InlineKeyboardButton.WithCallbackData(BotPhrases.BtnSettingsCryptoCoins, "settings_crypto_coins")
+                            },
+                            new List<InlineKeyboardButton>
+                            {
+                                InlineKeyboardButton.WithCallbackData(BotPhrases.BtnSettingsSubscribe, "settings_subscribe")
+                            }
+                        }));
+                    break;
+
+                // Slash-команды (обратная совместимость)
                 case "/valuteoneday":
-                case var txt when txt == BotPhrases.BtnValuteOneDay:
                     await _valuteHandler.HandleOneDay(update);
                     break;
                 case "/valutesevendays":
-                case var txt when txt == BotPhrases.BtnValuteSevenDays:
                     await _valuteHandler.HandleSevenDays(update);
                     break;
                 case "/statistics":
@@ -112,11 +151,9 @@ namespace ExchangeRatesBot.App.Services
                     await _statisticsHandler.HandleStatisticsCommand(update);
                     break;
                 case "/currencies":
-                case var txt when txt == BotPhrases.BtnCurrencies:
                     await _currenciesHandler.HandleCurrenciesCommand(update);
                     break;
                 case "/subscribe":
-                case var txt when txt == BotPhrases.BtnSubscribe:
                     await _subscriptionHandler.HandleSubscribeCommand(update);
                     break;
                 case "/news":
@@ -124,11 +161,9 @@ namespace ExchangeRatesBot.App.Services
                     await _newsHandler.HandleNewsCommand(update);
                     break;
                 case "/crypto":
-                case var txt when txt == BotPhrases.BtnCrypto:
                     await _cryptoHandler.HandleCryptoCommand(update, "RUB");
                     break;
                 case "/cryptocoins":
-                case var txt when txt == BotPhrases.BtnCryptoCoins:
                     await _cryptoHandler.HandleCryptoCoinsCommand(update);
                     break;
                 default:
@@ -189,6 +224,30 @@ namespace ExchangeRatesBot.App.Services
 
             switch (callbackData)
             {
+                // --- BOT-0027: Callback'и из inline-меню «Курсы» ---
+                case "rates_valute":
+                    await _valuteHandler.HandleOneDay(update);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+                case "rates_crypto":
+                    await _cryptoHandler.HandleCryptoCommand(update, "RUB");
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
+                // --- BOT-0027: Callback'и из inline-меню «Настройки» ---
+                case "settings_currencies":
+                    await _currenciesHandler.HandleCurrenciesCommand(update);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+                case "settings_crypto_coins":
+                    await _cryptoHandler.HandleCryptoCoinsCommand(update);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+                case "settings_subscribe":
+                    await _subscriptionHandler.HandleSubscribeCommand(update);
+                    await _botService.Client.AnswerCallbackQueryAsync(update.CallbackQuery.Id);
+                    break;
+
                 case "save_currencies":
                     await _currenciesHandler.HandleSaveCurrencies(update);
                     break;
