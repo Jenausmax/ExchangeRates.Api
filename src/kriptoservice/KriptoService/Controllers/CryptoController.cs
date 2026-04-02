@@ -44,8 +44,8 @@ namespace KriptoService.Controllers
             [FromQuery] int hours = 24,
             CancellationToken cancel = default)
         {
-            if (hours < 1 || hours > 720)
-                return BadRequest("hours must be between 1 and 720");
+            if (hours < 1 || hours > 4320)
+                return BadRequest("hours must be between 1 and 4320");
 
             var result = await _cryptoService.GetHistoryAsync(symbol.Trim().ToUpper(), currency.Trim().ToUpper(), hours, cancel);
             return Ok(result);

@@ -8,6 +8,6 @@ namespace KriptoService.Configuration
         public string ApiKey { get; set; } = "";
         public string[] Symbols { get; set; } = new[] { "BTC", "ETH", "SOL", "XRP", "BNB", "USDT", "DOGE", "ADA", "TON", "AVAX" };
         public string[] Currencies { get; set; } = new[] { "RUB", "USD" };
-        public int HistoryRetentionDays { get; set; } = 30;
+        public int HistoryRetentionDays { get; set; } = 180;
     }
 }
