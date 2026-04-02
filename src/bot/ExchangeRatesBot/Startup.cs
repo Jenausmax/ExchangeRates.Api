@@ -1,3 +1,4 @@
+using ExchangeRatesBot.App.Handlers;
 using ExchangeRatesBot.App.Services;
 using ExchangeRatesBot.Configuration.ModelConfig;
 using ExchangeRatesBot.DB;
@@ -31,6 +32,18 @@ namespace ExchangeRatesBot
             services.AddSingleton<IBotService, BotService>();
             services.AddScoped<IUpdateService, UpdateService>();
             services.AddScoped<IProcessingService, ProcessingService>();
+            // BOT-0025: Singleton для in-memory состояния выбора
+            services.AddSingleton<IUserSelectionState, UserSelectionState>();
+
+            // BOT-0025: Доменные handler'ы
+            services.AddScoped<StartHandler>();
+            services.AddScoped<ValuteHandler>();
+            services.AddScoped<CurrenciesHandler>();
+            services.AddScoped<StatisticsHandler>();
+            services.AddScoped<SubscriptionHandler>();
+            services.AddScoped<NewsHandler>();
+            services.AddScoped<CryptoHandler>();
+
             services.AddScoped<ICommandBot, CommandService>();
             services.AddScoped<IApiClient, ApiClientService>();
             services.AddScoped<IMessageValute, MessageValuteService>();
