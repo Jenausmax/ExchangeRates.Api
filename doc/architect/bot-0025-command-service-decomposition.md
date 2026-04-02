@@ -1,10 +1,10 @@
-- [ ] Не реализовано
+- [x] Реализовано
 
 # BOT-0025: Декомпозиция CommandService на доменные handler'ы
 
 ## Обзор
 
-Рефакторинг `CommandService` (810+ строк, 7 зависимостей, 10+ команд, 30+ callback'ов) в тонкий роутер + 7 доменных handler'ов. Цель -- соблюдение SRP, уменьшение конфликтов при мерже, улучшение навигации и тестируемости.
+Рефакторинг `CommandService` (932 строки, 7 зависимостей, 10+ команд, 30+ callback'ов) в тонкий роутер + 7 доменных handler'ов. Цель -- соблюдение SRP, уменьшение конфликтов при мерже, улучшение навигации и тестируемости.
 
 **ADR**: [adr-bot-0025-command-service-decomposition.md](adr-bot-0025-command-service-decomposition.md)
 
@@ -56,7 +56,9 @@ graph TB
     NH --> USS
     CRH --> US
     CRH --> BS
+    CRH --> UC2
     CRH --> KC[IKriptoApiClient]
+    CRH --> USS
 
     style CS fill:#f9f,stroke:#333,stroke-width:2px
     style USS fill:#ff9,stroke:#333,stroke-width:2px
@@ -109,7 +111,7 @@ public interface IUserSelectionState
 {
     ConcurrentDictionary<long, HashSet<string>> PendingCurrencies { get; }
     ConcurrentDictionary<long, HashSet<string>> PendingNewsSchedule { get; }
-    // ConcurrentDictionary<long, HashSet<string>> PendingCryptoCoins { get; }  // BOT-0024
+    ConcurrentDictionary<long, HashSet<string>> PendingCryptoCoins { get; }
 }
 ```
 
@@ -251,11 +253,17 @@ public class CryptoHandler
 {
     private readonly IUpdateService _updateService;
     private readonly IBotService _botService;
+    private readonly IUserService _userService;
     private readonly IKriptoApiClient _kriptoClient;
+    private readonly IUserSelectionState _state;
 
-    public async Task HandleCryptoCommand(Update update)              // /crypto, "Крипто"
-    public async Task HandleCryptoCallback(Update update, string currency) // crypto_*
+    public async Task HandleCryptoCommand(Update update)                      // /crypto, "Крипто"
+    public async Task HandleCryptoCallback(Update update, string currency)    // crypto_rub, crypto_usd, crypto_refresh_*
+    public async Task HandleCryptoCoinsCommand(Update update)                 // /cryptocoins, "Монеты"
+    public async Task HandleToggleCryptoSymbol(Update update, string symbol)  // toggle_crypto_{SYMBOL}
+    public async Task HandleSaveCryptoCoins(Update update)                    // save_crypto_coins
 
+    private List<List<InlineKeyboardButton>> CryptoCoinsKeyboard(long chatId)
     private static string FormatCryptoPrices(CryptoPriceResult result, string currency)
     private static string FormatCryptoPrice(decimal price)
     private static string EscapeMarkdown(string text)
@@ -342,6 +350,7 @@ services.AddScoped<ICommandBot, CommandService>();
 | `/subscribe`, "Подписка" | `MessageCommand` inline | `SubscriptionHandler` | `HandleSubscribeCommand` |
 | `/news`, "Новости" | `MessageCommand` inline | `NewsHandler` | `HandleNewsCommand` |
 | `/crypto`, "Крипто" | `MessageCommand` inline | `CryptoHandler` | `HandleCryptoCommand` |
+| `/cryptocoins`, "Монеты" | `MessageCommand` inline | `CryptoHandler` | `HandleCryptoCoinsCommand` |
 
 ### Callback queries
 
@@ -349,10 +358,12 @@ services.AddScoped<ICommandBot, CommandService>();
 |-----------------|---------------|-----------------|-----------------|
 | `crypto_*` | `HandleCryptoCallback` | `CryptoHandler` | `HandleCryptoCallback` |
 | `news_p_{id}` | `HandleNewsPage` | `NewsHandler` | `HandleNewsPage` |
+| `toggle_crypto_{SYMBOL}` | `HandleToggleCryptoSymbol` | `CryptoHandler` | `HandleToggleCryptoSymbol` |
 | `toggle_news_{HH}` | `HandleToggleNewsSlot` | `NewsHandler` | `HandleToggleNewsSlot` |
 | `toggle_{CODE}` | `HandleToggleCurrency` | `CurrenciesHandler` | `HandleToggleCurrency` |
 | `period_{N}` | inline в `CallbackMessageCommand` | `StatisticsHandler` | `HandlePeriodCallback` |
 | `save_currencies` | `HandleSaveCurrencies` | `CurrenciesHandler` | `HandleSaveCurrencies` |
+| `save_crypto_coins` | `HandleSaveCryptoCoins` | `CryptoHandler` | `HandleSaveCryptoCoins` |
 | `sub_toggle_rates` | inline | `SubscriptionHandler` | `HandleToggleRates` |
 | `sub_toggle_important` | inline | `SubscriptionHandler` | `HandleToggleImportant` |
 | `sub_news_menu` | inline | `SubscriptionHandler` | `HandleNewsMenu` |
@@ -374,7 +385,7 @@ src/bot/ExchangeRatesBot.App/
     StatisticsHandler.cs                 # ~60 строк (keyboard + callback)
     SubscriptionHandler.cs               # ~120 строк (2 меню, 6 callbacks)
     NewsHandler.cs                       # ~130 строк (лента, расписание, keyboard)
-    CryptoHandler.cs                     # ~120 строк (форматирование, keyboard)
+    CryptoHandler.cs                     # ~180 строк (форматирование, keyboard, персонализация монет)
   Services/
     CommandService.cs                    # ~120 строк (роутер)
     UserSelectionState.cs                # ~20 строк (singleton)
@@ -386,7 +397,7 @@ src/bot/ExchangeRatesBot.Domain/
     ...остальные без изменений
 ```
 
-**Итого**: 810 строк в 1 файле -> ~630 строк в 9 файлах (среднее 70 строк/файл).
+**Итого**: 932 строки в 1 файле -> ~690 строк в 9 файлах (среднее ~77 строк/файл).
 
 ## Порядок callback-matching (критично!)
 
@@ -394,10 +405,11 @@ src/bot/ExchangeRatesBot.Domain/
 
 1. `crypto_*` -- проверять **до** общего switch
 2. `news_p_*` -- проверять **до** `news_*`
-3. `toggle_news_*` -- проверять **до** `toggle_*`
-4. `toggle_*` -- только после `toggle_news_*`
-5. `period_*` -- проверять **до** общего switch
-6. Все остальные -- точное совпадение в switch
+3. `toggle_crypto_*` -- проверять **до** `toggle_*`
+4. `toggle_news_*` -- проверять **до** `toggle_*`
+5. `toggle_*` -- только после `toggle_crypto_*` и `toggle_news_*`
+6. `period_*` -- проверять **до** общего switch
+7. Все остальные -- точное совпадение в switch
 
 Этот порядок **идентичен текущему** в `CallbackMessageCommand`. Не менять порядок при рефакторинге!
 
@@ -409,7 +421,7 @@ src/bot/ExchangeRatesBot.Domain/
 3. Зарегистрировать в DI
 
 ### Этап 2: Вынос handler'ов (по одному, каждый -- отдельный коммит)
-1. `CryptoHandler` -- наиболее изолированный, не зависит от IUserService
+1. `CryptoHandler` -- включает персонализацию монет (BOT-0024), зависит от IUserService и IUserSelectionState
 2. `StartHandler` -- самый простой
 3. `ValuteHandler` -- простой, без state
 4. `StatisticsHandler` -- простой, без state
@@ -437,7 +449,7 @@ src/bot/ExchangeRatesBot.Domain/
 |------|------------|---------|-----------|
 | Потеря маршрута при переносе | Средняя | Высокое (пользователь не получит ответ) | Маппинг-таблица выше + ручное тестирование каждого callback |
 | Race condition в UserSelectionState | Низкая | Низкое | Точное воспроизведение текущей семантики ConcurrentDictionary |
-| Конфликт с BOT-0019 / BOT-0024 | Средняя | Среднее | Выполнять после мержа BOT-0019 и BOT-0024 в develop |
+| Конфликт с BOT-0019 / BOT-0024 | ~~Средняя~~ Снят | — | BOT-0019 и BOT-0024 уже в develop (2026-04-01) |
 | Регрессия в legacy callbacks | Низкая | Низкое | Перенос без изменений в SubscriptionHandler |
 
 ## Обратная совместимость

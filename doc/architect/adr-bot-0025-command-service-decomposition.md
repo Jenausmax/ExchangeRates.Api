@@ -1,11 +1,11 @@
 # ADR-BOT-0025: Декомпозиция CommandService на доменные handler'ы
 
-**Статус**: Предложен
-**Дата**: 2026-03-24
+**Статус**: Принят и реализован (2026-04-02)
+**Дата**: 2026-03-24 (обновлён 2026-04-01)
 
 ## Контекст
 
-`CommandService.cs` вырос до 810+ строк и продолжает расти с каждой фичей (BOT-0019, BOT-0024). Класс нарушает SRP: маршрутизация updates, обработка 10+ команд, обработка 30+ inline-callback'ов, хранение in-memory состояния (3 `ConcurrentDictionary`), генерация клавиатур, форматирование данных. Каждая новая фича (крипто, важные новости, персонализация) добавляет 50-100 строк в один файл.
+`CommandService.cs` вырос до 932 строк и продолжает расти с каждой фичей (BOT-0019, BOT-0024, BOT-0026). Класс нарушает SRP: маршрутизация updates, обработка 10+ команд, обработка 30+ inline-callback'ов, хранение in-memory состояния (3 `ConcurrentDictionary`), генерация клавиатур, форматирование данных. Каждая новая фича (крипто, важные новости, персонализация) добавляет 50-100 строк в один файл.
 
 ### Проблемы текущего подхода
 
@@ -59,7 +59,7 @@ Strategy подходит когда алгоритм выбирается в ru
 | `StatisticsHandler` | Статистика | `/statistics`, "Статистика", `period_{N}` | `IUpdateService`, `IMessageValute`, `IUserService` |
 | `SubscriptionHandler` | Подписки | `/subscribe`, "Подписка", `sub_*`, legacy callbacks | `IUpdateService`, `IBotService`, `IUserService` |
 | `NewsHandler` | Новости, расписание | `/news`, "Новости", `news_*`, `toggle_news_*`, `save_news_schedule` | `IUpdateService`, `IBotService`, `IUserService`, `INewsApiClient` |
-| `CryptoHandler` | Криптовалюты | `/crypto`, "Крипто", `crypto_*` | `IUpdateService`, `IBotService`, `IKriptoApiClient` |
+| `CryptoHandler` | Криптовалюты | `/crypto`, `/cryptocoins`, "Крипто", "Монеты", `crypto_*`, `toggle_crypto_*`, `save_crypto_coins` | `IUpdateService`, `IBotService`, `IUserService`, `IKriptoApiClient`, `IUserSelectionState` |
 
 ### Общие зависимости
 
@@ -76,7 +76,7 @@ public interface IUserSelectionState
 {
     ConcurrentDictionary<long, HashSet<string>> PendingCurrencies { get; }
     ConcurrentDictionary<long, HashSet<string>> PendingNewsSchedule { get; }
-    ConcurrentDictionary<long, HashSet<string>> PendingCryptoCoins { get; }  // BOT-0024
+    ConcurrentDictionary<long, HashSet<string>> PendingCryptoCoins { get; }
 }
 ```
 
@@ -160,7 +160,7 @@ src/bot/ExchangeRatesBot.App/
 
 ### Отрицательные
 
-- **Количество файлов**: +8 новых файлов (7 handler'ов + UserSelectionState)
+- **Количество файлов**: +9 новых файлов (7 handler'ов + UserSelectionState + IUserSelectionState)
 - **Indirection**: чтобы понять полный поток обработки, нужно открыть CommandService + конкретный handler
 - **DI**: CommandService получает 7 handler'ов через конструктор (вместо 7 сервисов -- та же цифра, но другой уровень абстракции)
 
