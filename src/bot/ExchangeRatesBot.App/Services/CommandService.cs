@@ -177,6 +177,15 @@ namespace ExchangeRatesBot.App.Services
             var callbackData = update.CallbackQuery.Data;
 
             // Порядок проверок КРИТИЧЕН — более специфичные префиксы проверять раньше
+
+            // BOT-0028: crypto_period_* ПЕРЕД crypto_* (оба начинаются с "crypto_")
+            if (callbackData.StartsWith("crypto_period_"))
+            {
+                var days = int.Parse(callbackData.Substring(14));
+                await _statisticsHandler.HandleCryptoPeriodCallback(update, days);
+                return;
+            }
+
             if (callbackData.StartsWith("crypto_"))
             {
                 var currency = callbackData.EndsWith("usd") ? "USD" : "RUB";
@@ -254,6 +263,14 @@ namespace ExchangeRatesBot.App.Services
                 case "save_crypto_coins":
                     await _cryptoHandler.HandleSaveCryptoCoins(update);
                     break;
+                // --- BOT-0028: Callback'и из inline-меню «Статистика» ---
+                case "stats_valute":
+                    await _statisticsHandler.HandleStatsValute(update);
+                    break;
+                case "stats_crypto":
+                    await _statisticsHandler.HandleStatsCrypto(update);
+                    break;
+
                 case "sub_toggle_rates":
                     await _subscriptionHandler.HandleToggleRates(update);
                     break;
