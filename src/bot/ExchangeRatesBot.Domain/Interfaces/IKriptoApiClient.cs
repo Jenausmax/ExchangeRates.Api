@@ -11,6 +11,11 @@ namespace ExchangeRatesBot.Domain.Interfaces
         /// Получить последние курсы криптовалют от KriptoService
         /// </summary>
         Task<CryptoPriceResult> GetLatestPricesAsync(string currency = "RUB", string symbols = null, CancellationToken cancel = default);
+
+        /// <summary>
+        /// Получить историю цен одной криптовалюты за N часов
+        /// </summary>
+        Task<CryptoHistoryResult> GetHistoryAsync(string symbol, string currency, int hours, CancellationToken cancel = default);
     }
 
     public class CryptoPriceResult
@@ -30,5 +35,18 @@ namespace ExchangeRatesBot.Domain.Interfaces
         public decimal Low24h { get; set; }
         public decimal Volume24h { get; set; }
         public decimal MarketCap { get; set; }
+    }
+
+    public class CryptoHistoryResult
+    {
+        public string Symbol { get; set; }
+        public string Currency { get; set; }
+        public List<CryptoHistoryPoint> Points { get; set; } = new();
+    }
+
+    public class CryptoHistoryPoint
+    {
+        public decimal Price { get; set; }
+        public DateTime FetchedAt { get; set; }
     }
 }

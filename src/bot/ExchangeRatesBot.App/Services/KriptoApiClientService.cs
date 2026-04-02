@@ -57,5 +57,26 @@ namespace ExchangeRatesBot.App.Services
                 return new CryptoPriceResult();
             }
         }
+
+        /// <summary>
+        /// Получить историю цен одной криптовалюты за N часов
+        /// </summary>
+        public async Task<CryptoHistoryResult> GetHistoryAsync(string symbol, string currency, int hours, CancellationToken cancel = default)
+        {
+            try
+            {
+                var url = $"api/crypto/history?symbol={symbol}&currency={currency}&hours={hours}";
+                var response = await _httpClient.GetAsync(url, cancel);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync(cancel);
+                return JsonSerializer.Deserialize<CryptoHistoryResult>(json, _jsonOptions)
+                       ?? new CryptoHistoryResult { Symbol = symbol, Currency = currency };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to get crypto history for {Symbol}/{Currency}", symbol, currency);
+                return new CryptoHistoryResult { Symbol = symbol, Currency = currency };
+            }
+        }
     }
 }
