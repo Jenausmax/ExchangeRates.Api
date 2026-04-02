@@ -67,6 +67,12 @@
         public static string RatesMenuHeader { get; } = "Выберите раздел:";
         public static string SettingsMenuHeader { get; } = "Настройки:";
 
+        // --- BOT-0028: Inline-кнопки в меню «Статистика» ---
+        public static string BtnStatsValute { get; } = "Статистика валют";
+        public static string BtnStatsCrypto { get; } = "Статистика монет";
+        public static string StatsMenuHeader { get; } = "Выберите раздел статистики:";
+        public static string CryptoStatsEmpty { get; } = "Нет данных за указанный период. Попробуйте выбрать меньший период.";
+
         /// <summary>
         /// Текст ответа на команду /help.
         /// </summary>
