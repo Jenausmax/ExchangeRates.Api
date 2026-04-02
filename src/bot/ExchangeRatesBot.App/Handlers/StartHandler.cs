@@ -34,9 +34,8 @@ namespace ExchangeRatesBot.App.Handlers
         {
             return new ReplyKeyboardMarkup(new[]
             {
-                new[] { new KeyboardButton(BotPhrases.BtnValuteOneDay), new KeyboardButton(BotPhrases.BtnValuteSevenDays), new KeyboardButton(BotPhrases.BtnStatistics) },
-                new[] { new KeyboardButton(BotPhrases.BtnCurrencies),     new KeyboardButton(BotPhrases.BtnSubscribe),     new KeyboardButton(BotPhrases.BtnHelp) },
-                new[] { new KeyboardButton(BotPhrases.BtnNews), new KeyboardButton(BotPhrases.BtnCrypto), new KeyboardButton(BotPhrases.BtnCryptoCoins) }
+                new[] { new KeyboardButton(BotPhrases.BtnRates), new KeyboardButton(BotPhrases.BtnNews), new KeyboardButton(BotPhrases.BtnStatistics) },
+                new[] { new KeyboardButton(BotPhrases.BtnSettings), new KeyboardButton(BotPhrases.BtnHelp) }
             })
             {
                 ResizeKeyboard = true
