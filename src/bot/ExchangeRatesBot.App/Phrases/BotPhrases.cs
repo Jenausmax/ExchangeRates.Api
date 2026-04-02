@@ -50,19 +50,32 @@
         public static string BtnHelp { get; } = "Помощь";
         public static string BtnCurrencies { get; } = "Валюты";
 
+        // --- BOT-0027: Зонтичные reply-кнопки ---
+        public static string BtnRates { get; } = "Курсы";
+        public static string BtnSettings { get; } = "Настройки";
+
+        // --- BOT-0027: Inline-кнопки в меню «Курсы» ---
+        public static string BtnRatesValute { get; } = "Курс валют";
+        public static string BtnRatesCrypto { get; } = "Курс монет";
+
+        // --- BOT-0027: Inline-кнопки в меню «Настройки» ---
+        public static string BtnSettingsCurrencies { get; } = "Настройки валют";
+        public static string BtnSettingsCryptoCoins { get; } = "Настройки монет";
+        public static string BtnSettingsSubscribe { get; } = "Подписка";
+
+        // --- BOT-0027: Заголовки inline-меню ---
+        public static string RatesMenuHeader { get; } = "Выберите раздел:";
+        public static string SettingsMenuHeader { get; } = "Настройки:";
+
         /// <summary>
         /// Текст ответа на команду /help.
         /// </summary>
         public static string HelpMessage { get; } =
             "*Доступные команды:*\n\r" +
-            "Курс сегодня -- курсы валют ЦБ РФ на сегодня\n\r" +
-            "За 7 дней -- изменения курсов за последние 7 дней\n\r" +
-            "Статистика -- детальная статистика за период (3-30 дней)\n\r" +
-            "Валюты -- выбор валют для отслеживания\n\r" +
-            "Подписка -- управление всеми подписками\n\r" +
+            "Курсы -- курсы валют и криптовалют\n\r" +
             "Новости -- лента последних новостей\n\r" +
-            "Крипто -- курсы криптовалют\n\r" +
-            "Монеты -- выбор криптовалют для отслеживания\n\r" +
+            "Статистика -- детальная статистика за период (3-30 дней)\n\r" +
+            "Настройки -- настройки валют, монет и подписок\n\r" +
             "Помощь -- это сообщение\n\r\n\r" +
             "_Также доступны команды:_ /valuteoneday, /valutesevendays, /statistics, /currencies, /subscribe, /news, /crypto, /cryptocoins, /help";
 
